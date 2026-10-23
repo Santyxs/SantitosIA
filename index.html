@@ -36,9 +36,13 @@
       </div>
     </nav>
 
-    <div class="nav-actions">
+    <div class="nav-actions" id="navActionsGuest">
       <button class="btn btn-quiet" data-open-auth="login">Iniciar sesión</button>
       <button class="btn btn-primary btn-small" data-open-auth="register">Crear cuenta <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5m0 0H6.5m5 0v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="nav-actions nav-user" id="navActionsUser" hidden>
+      <span class="user-chip" id="userChip"></span>
+      <button class="btn btn-quiet" type="button" id="logoutBtn">Cerrar sesión</button>
     </div>
 
     <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menú" aria-expanded="false" aria-controls="navLinks">
@@ -184,11 +188,12 @@
         <button class="btn btn-primary full-width submit-auth" type="submit" id="authSubmit">Crear cuenta <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <p class="auth-switch" id="authSwitch">¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button></p>
-      <p class="demo-note" id="demoNote">Prototipo visual: el registro real se activará al conectar el backend.</p>
+      <p class="demo-note" id="demoNote">Tu cuenta se crea con correo y contraseña. Plan inicial: Santitos Jr (gratis).</p>
       <div class="form-message" id="formMessage" role="status"></div>
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
