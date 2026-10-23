@@ -270,7 +270,16 @@ img{max-width:100%;display:block}
   flex-wrap:wrap;
   margin-top:28px;
 }
-.play-icon{font-size:16px;opacity:.85}
+.btn-arrow{
+  flex-shrink:0;
+  width:16px;
+  height:16px;
+  transition:transform .22s ease;
+  opacity:.92;
+}
+.btn:hover .btn-arrow{transform:translateX(3px)}
+.btn:hover .btn-arrow-down{transform:translateY(2px)}
+.btn-arrow-down{opacity:.85}
 .trust-row{
   display:flex;
   align-items:center;

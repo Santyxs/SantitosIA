@@ -20,7 +20,8 @@ function setAuthMode(mode) {
   confirmWrap.hidden = !registering;
   document.getElementById('confirmPassword').required = registering;
   document.getElementById('password').autocomplete = registering ? 'new-password' : 'current-password';
-  submit.innerHTML = registering ? 'Crear cuenta <span>→</span>' : 'Iniciar sesión <span>→</span>';
+  const arrow = '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  submit.innerHTML = registering ? 'Crear cuenta ' + arrow : 'Iniciar sesión ' + arrow;
   authSwitch.innerHTML = registering
     ? '¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button>'
     : '¿Todavía no tienes cuenta? <button type="button" data-open-auth="register">Regístrate</button>';
