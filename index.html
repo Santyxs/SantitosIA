@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07071a">
   <meta name="description" content="SantitosIA: tu IA, siempre contigo. Un asistente para videojuegos, dudas cotidianas y mucho más.">
   <title>SantitosIA — Tu IA, siempre contigo</title>
@@ -14,20 +14,37 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
-  <header class="topbar">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="ambient ambient-three"></div>
+
+  <header class="topbar" id="topbar">
     <a class="brand" href="#" aria-label="SantitosIA inicio">
       <span class="brand-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span>
-      <span class="brand-word"><span class="brand-name">Santitos<span class="brand-accent">IA</span></span><small>TU IA, SIEMPRE CONTIGO</small></span>
+      <span class="brand-word">
+        <span class="brand-name">Santitos<span class="brand-accent">IA</span></span>
+        <small>TU IA, SIEMPRE CONTIGO</small>
+      </span>
     </a>
-    <nav class="nav-links" aria-label="Navegación principal">
-      <a href="#modelos">Modelos</a><a href="#funciones">Funciones</a><a href="#precios">Precios</a>
+
+    <nav class="nav-links" id="navLinks" aria-label="Navegación principal">
+      <a href="#modelos">Modelos</a>
+      <a href="#funciones">Funciones</a>
+      <a href="#precios">Precios</a>
+      <div class="nav-mobile-actions">
+        <button class="btn btn-quiet full-width" data-open-auth="login">Iniciar sesión</button>
+        <button class="btn btn-primary full-width" data-open-auth="register">Crear cuenta <span>↗</span></button>
+      </div>
     </nav>
+
     <div class="nav-actions">
       <button class="btn btn-quiet" data-open-auth="login">Iniciar sesión</button>
       <button class="btn btn-primary btn-small" data-open-auth="register">Crear cuenta <span>↗</span></button>
     </div>
-    <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menú">☰</button>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menú" aria-expanded="false" aria-controls="navLinks">
+      <span class="menu-icon"></span>
+    </button>
   </header>
 
   <main>
@@ -40,33 +57,70 @@
           <button class="btn btn-primary btn-large" data-open-auth="register">Empieza gratis <span>→</span></button>
           <a class="btn btn-outline btn-large" href="#modelos"><span class="play-icon">⌄</span> Conoce los modelos</a>
         </div>
-        <div class="trust-row"><span class="avatars"><i>S</i><i>J</i><i>✦</i></span><span>Una cuenta. Tus conversaciones. A tu manera.</span></div>
+        <div class="trust-row">
+          <span class="avatars"><i>S</i><i>J</i><i>✦</i></span>
+          <span>Una cuenta. Tus conversaciones. A tu manera.</span>
+        </div>
       </div>
       <div class="hero-visual">
-        <div class="orbital orbital-a"></div><div class="orbital orbital-b"></div>
+        <div class="orbital orbital-a"></div>
+        <div class="orbital orbital-b"></div>
         <div class="glow-core"></div>
-        <div class="wolf-emblem"><img src="assets/wolf-mark.png" alt="Cabeza de lobo neón de SantitosIA"></div>
-        <div class="floating-card card-top"><span class="mini-icon purple">✦</span><span><b>Razonamiento avanzado</b><small>Cuando necesitas profundizar</small></span><span class="live-pill">PRO</span></div>
-        <div class="floating-card card-bottom"><span class="mini-icon cyan">↯</span><span><b>Respuestas al instante</b><small>Para tus dudas del día a día</small></span><span class="live-dot"></span></div>
+        <div class="wolf-emblem">
+          <img src="assets/wolf-mark.png" alt="Cabeza de lobo neón de SantitosIA">
+        </div>
+        <div class="floating-card card-top">
+          <span class="mini-icon purple">✦</span>
+          <span><b>Razonamiento avanzado</b><small>Cuando necesitas profundizar</small></span>
+          <span class="live-pill">PRO</span>
+        </div>
+        <div class="floating-card card-bottom">
+          <span class="mini-icon cyan">↯</span>
+          <span><b>Respuestas al instante</b><small>Para tus dudas del día a día</small></span>
+          <span class="live-dot"></span>
+        </div>
         <div class="visual-caption">INTELIGENCIA QUE VA CONTIGO <span>•</span> SANTITOSIA</div>
       </div>
     </section>
 
     <section class="model-section section-wrap" id="modelos">
-      <div class="section-heading"><div><div class="eyebrow">DOS FORMAS DE AYUDARTE</div><h2>Elige tu <span class="gradient-text">Santitos.</span></h2></div><p>Empieza gratis y cambia de modelo cuando necesites más potencia.</p></div>
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">DOS FORMAS DE AYUDARTE</div>
+          <h2>Elige tu <span class="gradient-text">Santitos.</span></h2>
+        </div>
+        <p>Empieza gratis y cambia de modelo cuando necesites más potencia.</p>
+      </div>
       <div class="model-grid">
         <article class="model-card jr-card">
-          <div class="model-top"><div class="model-symbol jr-symbol">↯</div><span class="tag tag-free">GRATIS</span></div>
-          <h3>Santitos Jr</h3><p class="model-tagline">Rápido, cercano y siempre listo.</p>
+          <div class="model-top">
+            <div class="model-symbol jr-symbol">↯</div>
+            <span class="tag tag-free">GRATIS</span>
+          </div>
+          <h3>Santitos Jr</h3>
+          <p class="model-tagline">Rápido, cercano y siempre listo.</p>
           <p>Ideal para preguntas cotidianas, videojuegos, recomendaciones, explicaciones y traducciones breves.</p>
-          <ul><li><span>✓</span> Consultas del día a día</li><li><span>✓</span> Ayuda con videojuegos</li><li><span>✓</span> Traducciones y explicaciones</li></ul>
+          <ul>
+            <li><span>✓</span> Consultas del día a día</li>
+            <li><span>✓</span> Ayuda con videojuegos</li>
+            <li><span>✓</span> Traducciones y explicaciones</li>
+          </ul>
           <button class="btn btn-outline full-width" data-open-auth="register">Probar gratis <span>→</span></button>
         </article>
         <article class="model-card pro-card">
-          <div class="model-top"><div class="model-symbol pro-symbol">✧</div><span class="tag tag-pro">PREMIUM</span></div>
-          <h3>Santitos</h3><p class="model-tagline">Más profundidad. Más herramientas.</p>
+          <div class="model-top">
+            <div class="model-symbol pro-symbol">✧</div>
+            <span class="tag tag-pro">PREMIUM</span>
+          </div>
+          <h3>Santitos</h3>
+          <p class="model-tagline">Más profundidad. Más herramientas.</p>
           <p>Para tareas complejas que necesitan un análisis más completo y herramientas adicionales.</p>
-          <ul><li><span>✓</span> Razonamiento avanzado</li><li><span>✓</span> Búsqueda web</li><li><span>✓</span> Subida y análisis de archivos e imágenes</li><li><span>✓</span> Traducción de plugins de Minecraft</li></ul>
+          <ul>
+            <li><span>✓</span> Razonamiento avanzado</li>
+            <li><span>✓</span> Búsqueda web</li>
+            <li><span>✓</span> Subida y análisis de archivos e imágenes</li>
+            <li><span>✓</span> Traducción de plugins de Minecraft</li>
+          </ul>
           <div class="price-line"><strong>3 $</strong><span>/ mes · precio previsto</span></div>
           <button class="btn btn-primary full-width" data-open-auth="register">Descubrir Premium <span>→</span></button>
         </article>
@@ -75,34 +129,81 @@
     </section>
 
     <section class="features-section section-wrap" id="funciones">
-      <div class="section-heading centered"><div class="eyebrow">MUCHO MÁS QUE UN CHAT</div><h2>Todo lo que necesitas.<br><span class="gradient-text">En un mismo lugar.</span></h2><p>Una experiencia sencilla, tanto desde el navegador como desde tu futuro escritorio de Windows.</p></div>
+      <div class="section-heading centered">
+        <div class="eyebrow">MUCHO MÁS QUE UN CHAT</div>
+        <h2>Todo lo que necesitas.<br><span class="gradient-text">En un mismo lugar.</span></h2>
+        <p>Una experiencia sencilla, tanto desde el navegador como desde tu futuro escritorio de Windows.</p>
+      </div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-icon purple">⌘</span><h3>Conversaciones con contexto</h3><p>Retoma tus conversaciones y mantén tus ideas organizadas en tu cuenta.</p></article>
-        <article class="feature-card"><span class="feature-icon cyan">⌕</span><h3>Busca y descubre</h3><p>Consulta información actualizada en la web cuando uses las herramientas compatibles.</p></article>
-        <article class="feature-card"><span class="feature-icon pink">▤</span><h3>Archivos y traducciones</h3><p>Trabaja con documentos y código, incluidos plugins de Minecraft.</p></article>
-        <article class="feature-card"><span class="feature-icon blue">◈</span><h3>Web y Windows</h3><p>Diseñada para crecer hacia una aplicación de escritorio con una experiencia coherente.</p></article>
+        <article class="feature-card">
+          <span class="feature-icon purple">⌘</span>
+          <h3>Conversaciones con contexto</h3>
+          <p>Retoma tus conversaciones y mantén tus ideas organizadas en tu cuenta.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon cyan">⌕</span>
+          <h3>Busca y descubre</h3>
+          <p>Consulta información actualizada en la web cuando uses las herramientas compatibles.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon pink">▤</span>
+          <h3>Archivos y traducciones</h3>
+          <p>Trabaja con documentos y código, incluidos plugins de Minecraft.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon blue">◈</span>
+          <h3>Web y Windows</h3>
+          <p>Diseñada para crecer hacia una aplicación de escritorio con una experiencia coherente.</p>
+        </article>
       </div>
     </section>
 
     <section class="pricing-section section-wrap" id="precios">
-      <div class="pricing-banner"><div class="pricing-orb"><img src="assets/wolf-mark.png" alt=""></div><div><div class="eyebrow">EMPIEZA A TU MANERA</div><h2>Tu próxima respuesta<br>está a un clic.</h2><p>Prueba Santitos Jr gratis. Cuando quieras ir más allá, tendrás Santitos Premium.</p></div><button class="btn btn-primary btn-large" data-open-auth="register">Crear mi cuenta <span>→</span></button></div>
+      <div class="pricing-banner">
+        <div class="pricing-orb"><img src="assets/wolf-mark.png" alt=""></div>
+        <div class="pricing-copy">
+          <div class="eyebrow">EMPIEZA A TU MANERA</div>
+          <h2>Tu próxima respuesta<br>está a un clic.</h2>
+          <p>Prueba Santitos Jr gratis. Cuando quieras ir más allá, tendrás Santitos Premium.</p>
+        </div>
+        <button class="btn btn-primary btn-large" data-open-auth="register">Crear mi cuenta <span>→</span></button>
+      </div>
     </section>
   </main>
 
   <footer class="footer section-wrap">
-    <a class="brand" href="#"><span class="brand-mark small-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span><span class="brand-word"><span class="brand-name">Santitos<span class="brand-accent">IA</span></span><small>TU IA, SIEMPRE CONTIGO</small></span></a>
-    <span>© 2026 SantitosIA · Proyecto en desarrollo</span><div><a href="#precios">Precios</a><a href="#funciones">Funciones</a></div>
+    <a class="brand" href="#">
+      <span class="brand-mark small-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span>
+      <span class="brand-word">
+        <span class="brand-name">Santitos<span class="brand-accent">IA</span></span>
+        <small>TU IA, SIEMPRE CONTIGO</small>
+      </span>
+    </a>
+    <span class="footer-copy">© 2026 SantitosIA · Proyecto en desarrollo</span>
+    <div class="footer-links">
+      <a href="#precios">Precios</a>
+      <a href="#funciones">Funciones</a>
+    </div>
   </footer>
 
   <div class="modal-backdrop" id="authModal" aria-hidden="true">
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button class="modal-close" id="closeAuth" aria-label="Cerrar">×</button>
-      <div class="auth-logo"><span class="brand-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span></div>
-      <div class="eyebrow">BIENVENIDO A SANTITOSIA</div><h2 id="authTitle">Crea tu cuenta</h2><p class="auth-subtitle" id="authSubtitle">Empieza gratis con Santitos Jr.</p>
+      <div class="auth-logo">
+        <span class="brand-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span>
+      </div>
+      <div class="eyebrow">BIENVENIDO A SANTITOSIA</div>
+      <h2 id="authTitle">Crea tu cuenta</h2>
+      <p class="auth-subtitle" id="authSubtitle">Empieza gratis con Santitos Jr.</p>
       <form id="authForm">
-        <label for="email">Correo electrónico</label><input id="email" type="email" placeholder="tu@correo.com" autocomplete="email" required>
-        <label for="password">Contraseña</label><input id="password" type="password" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password" required>
-        <div id="confirmWrap"><label for="confirmPassword">Repite la contraseña</label><input id="confirmPassword" type="password" placeholder="Vuelve a escribirla" minlength="8" autocomplete="new-password"></div>
+        <label for="email">Correo electrónico</label>
+        <input id="email" type="email" placeholder="tu@correo.com" autocomplete="email" required>
+        <label for="password">Contraseña</label>
+        <input id="password" type="password" placeholder="Mínimo 8 caracteres" minlength="8" autocomplete="new-password" required>
+        <div id="confirmWrap">
+          <label for="confirmPassword">Repite la contraseña</label>
+          <input id="confirmPassword" type="password" placeholder="Vuelve a escribirla" minlength="8" autocomplete="new-password">
+        </div>
         <button class="btn btn-primary full-width submit-auth" type="submit" id="authSubmit">Crear cuenta <span>→</span></button>
       </form>
       <p class="auth-switch" id="authSwitch">¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button></p>
@@ -110,6 +211,7 @@
       <div class="form-message" id="formMessage" role="status"></div>
     </section>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>

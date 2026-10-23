@@ -7,6 +7,9 @@ const authSwitch = document.getElementById('authSwitch');
 const demoNote = document.getElementById('demoNote');
 const form = document.getElementById('authForm');
 const message = document.getElementById('formMessage');
+const topbar = document.getElementById('topbar');
+const navLinks = document.getElementById('navLinks');
+const mobileMenuBtn = document.getElementById('mobileMenu');
 let authMode = 'register';
 
 function setAuthMode(mode) {
@@ -24,11 +27,13 @@ function setAuthMode(mode) {
   demoNote.textContent = 'Prototipo visual: el registro real se activará al conectar el backend.';
   message.textContent = '';
   message.className = 'form-message';
+  closeMobileMenu();
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('email').focus(), 80);
 }
+
 function closeAuth() {
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
@@ -36,17 +41,59 @@ function closeAuth() {
   form.reset();
   message.textContent = '';
 }
+
+function openMobileMenu() {
+  navLinks.classList.add('mobile-open');
+  topbar.classList.add('menu-open');
+  mobileMenuBtn.setAttribute('aria-expanded', 'true');
+  mobileMenuBtn.setAttribute('aria-label', 'Cerrar menú');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+  navLinks.classList.remove('mobile-open');
+  topbar.classList.remove('menu-open');
+  mobileMenuBtn.setAttribute('aria-expanded', 'false');
+  mobileMenuBtn.setAttribute('aria-label', 'Abrir menú');
+  if (!modal.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+function toggleMobileMenu() {
+  if (navLinks.classList.contains('mobile-open')) {
+    closeMobileMenu();
+  } else {
+    openMobileMenu();
+  }
+}
+
 document.addEventListener('click', e => {
   const trigger = e.target.closest('[data-open-auth]');
-  if (trigger) { e.preventDefault(); setAuthMode(trigger.dataset.openAuth); }
+  if (trigger) {
+    e.preventDefault();
+    setAuthMode(trigger.dataset.openAuth);
+  }
 });
+
 document.getElementById('closeAuth').addEventListener('click', closeAuth);
-modal.addEventListener('click', e => { if (e.target === modal) closeAuth(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeAuth(); });
-document.getElementById('mobileMenu').addEventListener('click', () => {
-  document.querySelector('.nav-links').classList.toggle('mobile-open');
+modal.addEventListener('click', e => {
+  if (e.target === modal) closeAuth();
 });
-document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('mobile-open')));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (modal.classList.contains('open')) closeAuth();
+    else if (navLinks.classList.contains('mobile-open')) closeMobileMenu();
+  }
+});
+
+mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', closeMobileMenu);
+});
+
 form.addEventListener('submit', e => {
   e.preventDefault();
   const password = document.getElementById('password').value;
@@ -60,4 +107,11 @@ form.addEventListener('submit', e => {
     ? 'La interfaz está lista. El registro se habilitará al conectar el servidor.'
     : 'El inicio de sesión se habilitará al conectar el servidor.';
   message.className = 'form-message';
+});
+
+// Close mobile menu on resize to desktop
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 850 && navLinks.classList.contains('mobile-open')) {
+    closeMobileMenu();
+  }
 });
