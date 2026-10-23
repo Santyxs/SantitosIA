@@ -132,18 +132,24 @@ function closeMenu() {
 
 // ─── Sesión en la UI ──────────────────────────────────────
 function setUser(user) {
-  if (user) {
+  const email = user && user.email ? String(user.email).trim() : '';
+  // Solo mostramos "sesión iniciada" si hay un email real
+  const loggedIn = !!email;
+
+  if (loggedIn) {
     if (els.guestNav) els.guestNav.hidden = true;
     if (els.userNav) els.userNav.hidden = false;
     if (els.userChip) {
-      const mail = user.email || 'Cuenta';
-      els.userChip.textContent = mail.length > 28 ? mail.slice(0, 26) + '…' : mail;
-      els.userChip.title = mail;
+      els.userChip.textContent = email.length > 28 ? email.slice(0, 26) + '…' : email;
+      els.userChip.title = email;
     }
   } else {
     if (els.guestNav) els.guestNav.hidden = false;
     if (els.userNav) els.userNav.hidden = true;
-    if (els.userChip) els.userChip.textContent = '';
+    if (els.userChip) {
+      els.userChip.textContent = '';
+      els.userChip.title = '';
+    }
   }
 }
 
@@ -258,10 +264,25 @@ window.addEventListener('resize', () => {
 
 // ─── Inicio ───────────────────────────────────────────────
 (async function init() {
-  const { data } = await sb.auth.getSession();
-  setUser(data.session ? data.session.user : null);
+  // getUser valida la sesión con el servidor; evita estados raros en localStorage
+  try {
+    const { data, error } = await sb.auth.getUser();
+    if (error || !data.user || !data.user.email) {
+      await sb.auth.signOut();
+      setUser(null);
+    } else {
+      setUser(data.user);
+    }
+  } catch (_) {
+    setUser(null);
+  }
 
   sb.auth.onAuthStateChange((_event, session) => {
-    setUser(session ? session.user : null);
+    const user = session && session.user ? session.user : null;
+    if (user && !user.email) {
+      setUser(null);
+      return;
+    }
+    setUser(user);
   });
 })();
