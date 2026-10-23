@@ -44,8 +44,7 @@ document.getElementById('closeAuth').addEventListener('click', closeAuth);
 modal.addEventListener('click', e => { if (e.target === modal) closeAuth(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeAuth(); });
 document.getElementById('mobileMenu').addEventListener('click', () => {
-  const nav = document.querySelector('.nav-links');
-  nav.classList.toggle('mobile-open');
+  document.querySelector('.nav-links').classList.toggle('mobile-open');
 });
 document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('mobile-open')));
 form.addEventListener('submit', e => {

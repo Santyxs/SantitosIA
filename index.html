@@ -3,23 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090914">
-  <meta name="description" content="SantitosIA: tu asistente de inteligencia artificial para videojuegos, dudas cotidianas y mucho más.">
-  <title>SantitosIA — Tu IA, a tu manera</title>
+  <meta name="theme-color" content="#07071a">
+  <meta name="description" content="SantitosIA: tu IA, siempre contigo. Un asistente para videojuegos, dudas cotidianas y mucho más.">
+  <title>SantitosIA — Tu IA, siempre contigo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icono-app.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <header class="topbar">
     <a class="brand" href="#" aria-label="SantitosIA inicio">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none"><path d="M9 8 20 14 24 9 28 14 39 8 37 29 31 39 24 34 17 39 11 29 9 8Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="m15 22 7 3-6 2m17-5-7 3 6 2M20 31l4-2 4 2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-      </span>
-      <span>Santitos<span class="brand-accent">IA</span></span>
+      <span class="brand-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span>
+      <span class="brand-word">Santitos<span class="brand-accent">IA</span><small>TU IA, SIEMPRE CONTIGO</small></span>
     </a>
     <nav class="nav-links" aria-label="Navegación principal">
       <a href="#modelos">Modelos</a><a href="#funciones">Funciones</a><a href="#precios">Precios</a>
@@ -34,9 +33,9 @@
   <main>
     <section class="hero section-wrap">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="status-dot"></span> TU ASISTENTE, SIEMPRE CONTIGO</div>
-        <h1>Tu mundo.<br> Tus preguntas.<br><span class="gradient-text">Tu IA.</span></h1>
-        <p class="hero-description">Desde resolver dudas sobre videojuegos hasta traducir archivos y descubrir cosas nuevas. Habla con una IA hecha para el día a día.</p>
+        <div class="eyebrow"><span class="status-dot"></span> TU IA, SIEMPRE CONTIGO</div>
+        <h1>Tu mundo.<br> Tus preguntas.<br><span class="gradient-text">Tu Santitos.</span></h1>
+        <p class="hero-description">Desde resolver dudas sobre videojuegos hasta traducir archivos y descubrir cosas nuevas. Una IA cercana, lista para ayudarte en el día a día.</p>
         <div class="hero-actions">
           <button class="btn btn-primary btn-large" data-open-auth="register">Empieza gratis <span>→</span></button>
           <a class="btn btn-outline btn-large" href="#modelos"><span class="play-icon">⌄</span> Conoce los modelos</a>
@@ -46,15 +45,7 @@
       <div class="hero-visual">
         <div class="orbital orbital-a"></div><div class="orbital orbital-b"></div>
         <div class="glow-core"></div>
-        <div class="wolf-emblem">
-          <svg viewBox="0 0 240 240" fill="none" aria-label="Emblema geométrico de lobo">
-            <defs><linearGradient id="wolfGrad" x1="30" y1="25" x2="205" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#C4B5FD"/><stop offset=".5" stop-color="#7C5CFC"/><stop offset="1" stop-color="#4DEBFF"/></linearGradient></defs>
-            <path d="M45 30 91 53 120 33 149 53 195 30 184 130 158 183 120 207 82 183 56 130 45 30Z" stroke="url(#wolfGrad)" stroke-width="5" stroke-linejoin="round"/>
-            <path d="m61 81 44 17-30 15m104-32-44 17 30 15" stroke="#5DEBFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="m94 147 26 16 26-16-12 31h-28l-12-31Z" fill="url(#wolfGrad)"/>
-            <path d="m91 53 29 42 29-42M56 130l38 17m90-17-38 17" stroke="url(#wolfGrad)" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-        </div>
+        <div class="wolf-emblem"><img src="assets/wolf-mark.png" alt="Cabeza de lobo neón de SantitosIA"></div>
         <div class="floating-card card-top"><span class="mini-icon purple">✦</span><span><b>Razonamiento avanzado</b><small>Cuando necesitas profundizar</small></span><span class="live-pill">PRO</span></div>
         <div class="floating-card card-bottom"><span class="mini-icon cyan">↯</span><span><b>Respuestas al instante</b><small>Para tus dudas del día a día</small></span><span class="live-dot"></span></div>
         <div class="visual-caption">INTELIGENCIA QUE VA CONTIGO <span>•</span> SANTITOSIA</div>
@@ -94,16 +85,19 @@
     </section>
 
     <section class="pricing-section section-wrap" id="precios">
-      <div class="pricing-banner"><div class="pricing-orb">✦</div><div><div class="eyebrow">EMPIEZA A TU MANERA</div><h2>Tu próxima respuesta<br>está a un clic.</h2><p>Prueba Santitos Jr gratis. Cuando quieras ir más allá, tendrás Santitos Premium.</p></div><button class="btn btn-primary btn-large" data-open-auth="register">Crear mi cuenta <span>→</span></button></div>
+      <div class="pricing-banner"><div class="pricing-orb"><img src="assets/wolf-mark.png" alt=""></div><div><div class="eyebrow">EMPIEZA A TU MANERA</div><h2>Tu próxima respuesta<br>está a un clic.</h2><p>Prueba Santitos Jr gratis. Cuando quieras ir más allá, tendrás Santitos Premium.</p></div><button class="btn btn-primary btn-large" data-open-auth="register">Crear mi cuenta <span>→</span></button></div>
     </section>
   </main>
 
-  <footer class="footer section-wrap"><a class="brand" href="#"><span class="brand-mark small-mark">S</span><span>Santitos<span class="brand-accent">IA</span></span></a><span>© 2026 SantitosIA · Proyecto en desarrollo</span><div><a href="#precios">Precios</a><a href="#funciones">Funciones</a></div></footer>
+  <footer class="footer section-wrap">
+    <a class="brand" href="#"><span class="brand-mark small-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span><span class="brand-word">Santitos<span class="brand-accent">IA</span><small>TU IA, SIEMPRE CONTIGO</small></span></a>
+    <span>© 2026 SantitosIA · Proyecto en desarrollo</span><div><a href="#precios">Precios</a><a href="#funciones">Funciones</a></div>
+  </footer>
 
   <div class="modal-backdrop" id="authModal" aria-hidden="true">
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button class="modal-close" id="closeAuth" aria-label="Cerrar">×</button>
-      <div class="auth-logo"><span class="brand-mark">✦</span></div>
+      <div class="auth-logo"><span class="brand-mark wolf-brand"><img src="assets/wolf-mark.png" alt=""></span></div>
       <div class="eyebrow">BIENVENIDO A SANTITOSIA</div><h2 id="authTitle">Crea tu cuenta</h2><p class="auth-subtitle" id="authSubtitle">Empieza gratis con Santitos Jr.</p>
       <form id="authForm">
         <label for="email">Correo electrónico</label><input id="email" type="email" placeholder="tu@correo.com" autocomplete="email" required>
