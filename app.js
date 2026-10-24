@@ -650,7 +650,7 @@ function showPanel(section) {
   } else if (section === 'files') {
     kicker.textContent = 'DOCUMENTOS E IMÁGENES'; heading.textContent = 'Tus archivos';
     description.textContent = 'Puedes adjuntar imágenes o archivos desde el botón del clip junto al cuadro de mensaje. En esta versión de vista previa, los archivos solo se muestran en la conversación; todavía no se procesan con un modelo de IA.';
-    const action = document.createElement('button'); action.type = 'button'; action.className = 'new-chat-button'; action.textContent = '＋ Seleccionar archivos'; action.addEventListener('click', () => chatEls.fileInput.click());
+    const action = document.createElement('button'); action.type = 'button'; action.className = 'new-chat-button'; action.innerHTML = '<span class="new-chat-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3.2v9.6M3.2 8h9.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Seleccionar archivos'; action.addEventListener('click', () => chatEls.fileInput.click());
     panel.append(kicker, heading, description, action);
   } else if (section === 'settings') {
     kicker.textContent = 'PERSONALIZA TU EXPERIENCIA'; heading.textContent = 'Configuración';
