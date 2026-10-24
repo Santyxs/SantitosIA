@@ -186,8 +186,8 @@ function setUser(user) {
     closeAccountMenu();
   }
   updateChatUser(loggedIn ? user : null);
-  // La portada permanece como página principal; el chat vive en #chat.
-  if (loggedIn && window.location.hash === '#chat') showChatView();
+  // La portada permanece en /SantitosIA/ y el chat usa la ruta /SantitosIA/chat.
+  if (loggedIn && routeFromLocation() === 'chat') showChatView();
   else showLandingView();
 }
 
@@ -257,7 +257,8 @@ document.addEventListener('click', (e) => {
     e.preventDefault();
     // Las llamadas a la acción principal deben reutilizar la sesión existente.
     if (t.dataset.openAuth === 'register' && currentAuthUser) {
-      window.location.hash = '#chat';
+      window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+      showChatView();
       return;
     }
     openAuth(t.dataset.openAuth);
@@ -617,9 +618,9 @@ function openChatSection(section) {
   closeChatSidebar();
   const routes = { chat: 'chat', history: 'history', files: 'Files', settings: 'Configuration', profile: 'Profile', support: 'Support' };
   const route = routes[section] || 'chat';
-  const target = section === 'chat' ? '/SantitosIA/#chat' : `/SantitosIA/${route}`;
+  const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
-    if (window.location.hash !== '#chat' || window.location.pathname !== '/SantitosIA/') {
+    if (window.location.pathname.replace(/\/+$/, '') !== '/SantitosIA/chat' || window.location.hash) {
       window.history.pushState({ section }, '', target);
     }
     const session = activeSession();
@@ -742,7 +743,7 @@ document.addEventListener('keydown', (event) => {
 // Navegación por rutas: GitHub Pages sirve 404.html como fallback para rutas profundas.
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\\/+$/, '').toLowerCase();
-  if (window.location.hash === '#chat' || path.endsWith('/chat')) return 'chat';
+  if (path.endsWith('/chat')) return 'chat';
   if (path.endsWith('/history')) return 'history';
   if (path.endsWith('/configuration')) return 'settings';
   if (path.endsWith('/files')) return 'files';
@@ -761,9 +762,10 @@ window.addEventListener('popstate', async () => {
   else showPanel(route);
 });
 
-// Navegación por hash: /SantitosIA/ conserva la portada y /SantitosIA/#chat abre el chat.
+// Compatibilidad con enlaces antiguos que aún usen #chat.
 window.addEventListener('hashchange', async () => {
   if (window.location.hash === '#chat') {
+    window.history.replaceState({ section: 'chat' }, '', '/SantitosIA/chat');
     try {
       const { data } = await sb.auth.getSession();
       const user = data && data.session && data.session.user;
