@@ -742,7 +742,7 @@ document.addEventListener('keydown', (event) => {
 // Si se cierra sesión en ese momento, se puede borrar la sesión recién creada.
 // Navegación por rutas: GitHub Pages sirve 404.html como fallback para rutas profundas.
 function routeFromLocation() {
-  const path = window.location.pathname.replace(/\\/+$/, '').toLowerCase();
+  const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
   if (path.endsWith('/chat')) return 'chat';
   if (path.endsWith('/history')) return 'history';
   if (path.endsWith('/configuration')) return 'settings';
