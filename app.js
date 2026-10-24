@@ -615,10 +615,19 @@ function safeSave(key, value) { try { window.localStorage.setItem(key, value); }
 function closeChatSidebar() { if (chatEls.app) chatEls.app.classList.remove('sidebar-open'); }
 function openChatSection(section) {
   closeChatSidebar();
+  const routes = { chat: 'chat', history: 'history', files: 'Files', settings: 'Configuration', profile: 'Profile', support: 'Support' };
+  const route = routes[section] || 'chat';
+  const target = section === 'chat' ? '/SantitosIA/#chat' : `/SantitosIA/${route}`;
   if (section === 'chat') {
+    if (window.location.hash !== '#chat' || window.location.pathname !== '/SantitosIA/') {
+      window.history.pushState({ section }, '', target);
+    }
     const session = activeSession();
     if (session) renderConversation(session.id); else showChatWelcome();
-  } else showPanel(section);
+  } else {
+    window.history.pushState({ section }, '', target);
+    showPanel(section);
+  }
 }
 function startNewChat() {
   activeChatId = null; selectedAttachments = []; renderAttachmentPreview();
@@ -730,6 +739,28 @@ document.addEventListener('keydown', (event) => {
 // No llamar a signOut() cuando aún no hay sesión: al volver del enlace
 // de confirmación, el SDK puede estar procesando el code/token de la URL.
 // Si se cierra sesión en ese momento, se puede borrar la sesión recién creada.
+// Navegación por rutas: GitHub Pages sirve 404.html como fallback para rutas profundas.
+function routeFromLocation() {
+  const path = window.location.pathname.replace(/\\/+$/, '').toLowerCase();
+  if (window.location.hash === '#chat' || path.endsWith('/chat')) return 'chat';
+  if (path.endsWith('/history')) return 'history';
+  if (path.endsWith('/configuration')) return 'settings';
+  if (path.endsWith('/files')) return 'files';
+  if (path.endsWith('/profile')) return 'profile';
+  if (path.endsWith('/support')) return 'support';
+  return 'home';
+}
+window.addEventListener('popstate', async () => {
+  const route = routeFromLocation();
+  if (route === 'home') { showLandingView(); return; }
+  const { data } = await sb.auth.getSession();
+  const user = data && data.session && data.session.user;
+  if (!user) { showLandingView(); openAuth('login'); return; }
+  setUser(user); showChatView();
+  if (route === 'chat') openChatSection('chat');
+  else showPanel(route);
+});
+
 // Navegación por hash: /SantitosIA/ conserva la portada y /SantitosIA/#chat abre el chat.
 window.addEventListener('hashchange', async () => {
   if (window.location.hash === '#chat') {
