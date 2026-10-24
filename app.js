@@ -367,6 +367,12 @@ const chatEls = {
   avatar: document.getElementById('chatAvatar'),
   userMenu: document.getElementById('chatUserMenu'),
   model: document.getElementById('modelSelect'),
+  modelPicker: document.getElementById('modelPicker'),
+  modelPickerBtn: document.getElementById('modelPickerBtn'),
+  modelMenu: document.getElementById('modelMenu'),
+  modelNameLabel: document.getElementById('modelNameLabel'),
+  modelBadgeLabel: document.getElementById('modelBadgeLabel'),
+  modelPickerMark: document.getElementById('modelPickerMark'),
 };
 
 let chatUserId = null;
@@ -446,6 +452,41 @@ function updatePlanCard() {
   if (name) name.textContent = pro ? 'Santitos' : 'Santitos Jr';
   if (detail) detail.textContent = pro ? 'Razonamiento avanzado' : 'Rápido · Gratis';
   if (badge) badge.textContent = pro ? 'PREMIUM' : 'GRATIS';
+  // Sincroniza el botón del selector de modelos
+  if (chatEls.modelNameLabel) chatEls.modelNameLabel.textContent = pro ? 'Santitos' : 'Santitos Jr';
+  if (chatEls.modelBadgeLabel) {
+    chatEls.modelBadgeLabel.textContent = pro ? 'Premium' : 'Gratis';
+    chatEls.modelBadgeLabel.className = 'model-badge ' + (pro ? 'pro' : 'free');
+  }
+  if (chatEls.modelPickerMark) chatEls.modelPickerMark.textContent = pro ? '✧' : '↯';
+  if (chatEls.modelMenu) {
+    chatEls.modelMenu.querySelectorAll('.model-option').forEach((opt) => {
+      const active = opt.dataset.model === (pro ? 'pro' : 'jr');
+      opt.classList.toggle('active', active);
+      opt.setAttribute('aria-selected', String(active));
+    });
+  }
+}
+
+function closeModelMenu() {
+  if (!chatEls.modelMenu || !chatEls.modelPickerBtn) return;
+  chatEls.modelMenu.hidden = true;
+  chatEls.modelPickerBtn.setAttribute('aria-expanded', 'false');
+  if (chatEls.modelPicker) chatEls.modelPicker.classList.remove('open');
+}
+
+function setModelValue(value) {
+  if (!chatEls.model) return;
+  const next = value === 'pro' ? 'pro' : 'jr';
+  if (chatEls.model.value === next) {
+    closeModelMenu();
+    return;
+  }
+  chatEls.model.value = next;
+  updatePlanCard();
+  safeSave(`santitosia:model:${chatUserId || 'guest'}`, next);
+  showChatToast(next === 'pro' ? 'Santitos seleccionado (vista previa).' : 'Santitos Jr seleccionado (vista previa).');
+  closeModelMenu();
 }
 function showChatToast(message) {
   if (!chatEls.toast) return;
@@ -462,19 +503,25 @@ function setActiveNav(section) {
 }
 function showChatWelcome() {
   setActiveNav('chat');
-  if (chatEls.welcome) chatEls.welcome.hidden = false;
+  if (chatEls.welcome) {
+    chatEls.welcome.hidden = false;
+    chatEls.welcome.removeAttribute('aria-hidden');
+  }
   if (chatEls.messages) chatEls.messages.replaceChildren();
-  chatEls.previewNotice.hidden = false;
-  chatEls.stage.scrollTop = 0;
+  if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
+  if (chatEls.stage) chatEls.stage.scrollTop = 0;
 }
 function renderConversation(id) {
   const session = chatSessions.find((item) => item.id === id);
   if (!session) { showChatWelcome(); return; }
   activeChatId = id;
   setActiveNav('chat');
-  chatEls.welcome.hidden = true;
+  if (chatEls.welcome) {
+    chatEls.welcome.hidden = true;
+    chatEls.welcome.setAttribute('aria-hidden', 'true');
+  }
   chatEls.messages.replaceChildren();
-  chatEls.previewNotice.hidden = false;
+  if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
   session.messages.forEach((item) => addMessageToDOM(item, false));
   chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
   renderRecentChats();
@@ -578,9 +625,13 @@ function escapeHtml(value) {
 }
 function showPanel(section) {
   setActiveNav(section);
-  chatEls.welcome.hidden = true;
-  chatEls.messages.replaceChildren();
-  chatEls.previewNotice.hidden = section !== 'chat';
+  // La pantalla "¿Qué tienes en mente?" solo pertenece al chat vacío; nunca en historial/archivos/configuración
+  if (chatEls.welcome) {
+    chatEls.welcome.hidden = true;
+    chatEls.welcome.setAttribute('aria-hidden', 'true');
+  }
+  if (chatEls.messages) chatEls.messages.replaceChildren();
+  if (chatEls.previewNotice) chatEls.previewNotice.hidden = true;
   const panel = document.createElement('section'); panel.className = 'chat-panel-view';
   const kicker = document.createElement('div'); kicker.className = 'panel-kicker';
   const heading = document.createElement('h2'); const description = document.createElement('p');
@@ -722,9 +773,30 @@ document.getElementById('chatLogoutBtn')?.addEventListener('click', () => logout
 document.addEventListener('click', (event) => {
   if (chatEls.userMenu && !event.target.closest('.chat-user-row')) chatEls.userMenu.hidden = true;
 });
+// Selector de modelos personalizado
+if (chatEls.modelPickerBtn) {
+  chatEls.modelPickerBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const willOpen = !!(chatEls.modelMenu && chatEls.modelMenu.hidden);
+    if (chatEls.modelMenu) chatEls.modelMenu.hidden = !willOpen;
+    chatEls.modelPickerBtn.setAttribute('aria-expanded', String(willOpen));
+    if (chatEls.modelPicker) chatEls.modelPicker.classList.toggle('open', willOpen);
+  });
+}
+if (chatEls.modelMenu) {
+  chatEls.modelMenu.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-model]');
+    if (option) setModelValue(option.dataset.model);
+  });
+}
+document.addEventListener('click', (event) => {
+  if (chatEls.modelPicker && !event.target.closest('#modelPicker')) closeModelMenu();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeModelMenu();
+});
 chatEls.model?.addEventListener('change', () => {
-  updatePlanCard(); safeSave(`santitosia:model:${chatUserId || 'guest'}`, chatEls.model.value);
-  showChatToast(chatEls.model.value === 'pro' ? 'Santitos seleccionado (vista previa).' : 'Santitos Jr seleccionado (vista previa).');
+  updatePlanCard();
 });
 document.getElementById('webSearchBtn')?.addEventListener('click', (event) => {
   webSearchEnabled = !webSearchEnabled;
