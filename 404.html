@@ -117,13 +117,38 @@
         <button class="icon-button open-chat-sidebar" id="openChatSidebar" type="button" aria-label="Abrir menú" title="Abrir menú">☰</button>
         <div class="chat-context"><span class="context-dot"></span><span>Tu espacio de conversación</span></div>
         <div class="chat-topbar-actions">
-          <label class="model-picker" for="modelSelect"><span class="model-picker-mark">✧</span><span class="model-picker-label">Modelo</span>
-            <select id="modelSelect" aria-label="Seleccionar modelo">
-              <option value="jr" data-description="Rápido y económico · Gratis">Santitos Jr · Gratis</option>
-              <option value="pro" data-description="Razonamiento avanzado · Premium">Santitos · Premium</option>
+          <div class="model-picker" id="modelPicker">
+            <button type="button" class="model-picker-trigger" id="modelPickerBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Seleccionar modelo">
+              <span class="model-picker-mark" id="modelPickerMark">↯</span>
+              <span class="model-picker-current">
+                <span class="model-name" id="modelNameLabel">Santitos Jr</span>
+                <span class="model-badge free" id="modelBadgeLabel">Gratis</span>
+              </span>
+              <span class="select-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div class="model-menu" id="modelMenu" role="listbox" hidden>
+              <button type="button" role="option" class="model-option active" data-model="jr" aria-selected="true">
+                <span class="model-option-icon">↯</span>
+                <span class="model-option-text">
+                  <strong>Santitos Jr</strong>
+                  <small>Rápido y cercano</small>
+                </span>
+                <span class="model-option-badge free">Gratis</span>
+              </button>
+              <button type="button" role="option" class="model-option" data-model="pro" aria-selected="false">
+                <span class="model-option-icon">✧</span>
+                <span class="model-option-text">
+                  <strong>Santitos</strong>
+                  <small>Razonamiento avanzado</small>
+                </span>
+                <span class="model-option-badge pro">Premium</span>
+              </button>
+            </div>
+            <select id="modelSelect" hidden aria-hidden="true">
+              <option value="jr">Santitos Jr · Gratis</option>
+              <option value="pro">Santitos · Premium</option>
             </select>
-            <span class="select-chevron">⌄</span>
-          </label>
+          </div>
           <button class="icon-button" id="webSearchBtn" type="button" aria-pressed="false" title="Activar búsqueda web" aria-label="Activar búsqueda web"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"></circle><path d="m16 16 4.2 4.2"></path></svg></button>
           <button class="icon-button chat-settings-shortcut" type="button" data-chat-nav="settings" title="Configuración" aria-label="Configuración"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.9.2 1.7 1.7 0 0 0-.7 1.5v.2H8.8v-.2a1.7 1.7 0 0 0-.7-1.5 1.7 1.7 0 0 0-1.9-.2l-.2.1-1.8-3.1.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.4-.9h-.3v-3.6h.3a1.7 1.7 0 0 0 1.4-.9 1.7 1.7 0 0 0-.3-1.9l-.1-.1L6 4.5l.2.1a1.7 1.7 0 0 0 1.9-.2 1.7 1.7 0 0 0 .7-1.5v-.2h6.4v.2a1.7 1.7 0 0 0 .7 1.5 1.7 1.7 0 0 0 1.9.2l.2-.1 1.8 3.1-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.4.9h.3v3.6h-.3a1.7 1.7 0 0 0-1.4.9Z"></path></svg></button>
         </div>
