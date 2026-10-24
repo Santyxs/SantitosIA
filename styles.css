@@ -913,3 +913,34 @@ img{max-width:100%;display:block}
 @media (max-width:850px){
   .nav-user{display:none !important}
 }
+
+/* Ocultar acciones de invitado tanto en escritorio como en el menú móvil. */
+.nav-actions[hidden],
+.nav-mobile-actions[hidden] { display: none !important; }
+
+/* Menú desplegable de cuenta */
+.account-dropdown{position:relative}
+.user-chip{display:inline-flex;align-items:center;gap:10px;max-width:220px;cursor:pointer;font:inherit;text-align:left;transition:background .18s ease,border-color .18s ease}
+.user-chip:hover,.user-chip[aria-expanded="true"]{background:rgba(155,123,255,.18);border-color:rgba(155,123,255,.4)}
+.user-chip #userDisplayName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.account-chevron{flex:none;transition:transform .18s ease}
+.user-chip[aria-expanded="true"] .account-chevron{transform:rotate(180deg)}
+.account-menu{position:absolute;right:0;top:calc(100% + 10px);width:220px;padding:8px;background:#111020;border:1px solid rgba(155,123,255,.24);border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.42);z-index:100;animation:accountMenuIn .16s ease}
+.account-menu[hidden],.mobile-account-menu[hidden]{display:none!important}
+@keyframes accountMenuIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.account-menu-heading,.mobile-account-heading{padding:10px 12px 12px;color:#aaa2c9;font-size:12px;font-weight:700;letter-spacing:.04em;overflow-wrap:anywhere;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:5px}
+.account-menu button{display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;color:#eeeaf9;font:inherit;font-size:13px;text-align:left;padding:11px 12px;border-radius:9px;cursor:pointer}
+.account-menu button:hover{background:rgba(155,123,255,.13)}
+.menu-symbol{display:inline-flex;align-items:center;justify-content:center;width:17px;color:#b8a1ff;font-size:15px}
+.account-menu-divider{height:1px;background:rgba(255,255,255,.08);margin:6px 4px}
+.account-menu .account-logout{color:#ffb5c0}
+.account-menu .account-logout .menu-symbol{color:#ff9aa9}
+.account-feedback{position:fixed;right:22px;bottom:22px;z-index:150;background:#151327;border:1px solid rgba(155,123,255,.32);border-radius:12px;padding:13px 16px;max-width:min(360px,calc(100vw - 32px));color:#eeeaf9;font-size:13px;box-shadow:0 12px 36px rgba(0,0,0,.35)}
+.account-feedback[hidden]{display:none!important}
+.mobile-account-menu{display:none}
+@media(max-width:850px){
+  .mobile-account-menu{display:flex;flex-direction:column;gap:2px;margin-top:20px;padding:10px;background:rgba(155,123,255,.06);border:1px solid rgba(155,123,255,.18);border-radius:14px}
+  .mobile-account-menu button{width:100%;text-align:left;border:0;background:transparent;color:#eeeaf9;font:inherit;font-size:16px;padding:13px 10px;border-radius:9px;cursor:pointer}
+  .mobile-account-menu button:hover{background:rgba(155,123,255,.12)}
+  .mobile-account-menu .mobile-logout{margin-top:4px;border-top:1px solid rgba(255,255,255,.08);border-radius:0;color:#ffb5c0}
+}

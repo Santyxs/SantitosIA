@@ -30,9 +30,16 @@
     <nav class="nav-links" id="navLinks" aria-label="Navegación principal">
       <a href="#modelos">Modelos</a>
       <a href="#funciones">Funciones</a>
-      <div class="nav-mobile-actions">
+      <div class="nav-mobile-actions" id="mobileGuestActions">
         <button class="btn btn-quiet full-width" data-open-auth="login">Iniciar sesión</button>
         <button class="btn btn-primary full-width" data-open-auth="register">Crear cuenta <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5m0 0H6.5m5 0v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="mobile-account-menu" id="mobileAccountMenu" hidden>
+        <div class="mobile-account-heading" id="mobileAccountName"></div>
+        <button type="button" data-account-action="profile">Perfil</button>
+        <button type="button" data-account-action="settings">Configuración</button>
+        <button type="button" data-account-action="support">Soporte</button>
+        <button type="button" class="mobile-logout" id="mobileLogoutBtn">Cerrar sesión</button>
       </div>
     </nav>
 
@@ -41,9 +48,21 @@
       <button class="btn btn-primary btn-small" data-open-auth="register">Crear cuenta <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5m0 0H6.5m5 0v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <div class="nav-actions nav-user" id="navActionsUser" hidden>
-      <span class="user-chip" id="userChip"></span>
-      <button class="btn btn-quiet" type="button" id="logoutBtn">Cerrar sesión</button>
+      <div class="account-dropdown" id="accountDropdown">
+        <button class="user-chip" id="userChip" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="accountMenu">
+          <span id="userDisplayName"></span><svg class="account-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m2.5 4.5 3.5 3 3.5-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="account-menu" id="accountMenu" hidden>
+          <div class="account-menu-heading" id="accountMenuName"></div>
+          <button type="button" data-account-action="profile"><span class="menu-symbol">◉</span>Perfil</button>
+          <button type="button" data-account-action="settings"><span class="menu-symbol">⚙</span>Configuración</button>
+          <button type="button" data-account-action="support"><span class="menu-symbol">?</span>Soporte</button>
+          <div class="account-menu-divider"></div>
+          <button type="button" id="logoutBtn" class="account-logout"><span class="menu-symbol">↪</span>Cerrar sesión</button>
+        </div>
+      </div>
     </div>
+    <div class="account-feedback" id="accountFeedback" role="status" aria-live="polite" hidden></div>
 
     <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menú" aria-expanded="false" aria-controls="navLinks">
       <span class="menu-icon"></span>

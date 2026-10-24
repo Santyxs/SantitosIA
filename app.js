@@ -31,8 +31,16 @@ const els = {
   navLinks: document.getElementById('navLinks'),
   menuBtn: document.getElementById('mobileMenu'),
   guestNav: document.getElementById('navActionsGuest'),
+  mobileGuestNav: document.querySelector('.nav-mobile-actions'),
   userNav: document.getElementById('navActionsUser'),
   userChip: document.getElementById('userChip'),
+  userDisplayName: document.getElementById('userDisplayName'),
+  accountMenu: document.getElementById('accountMenu'),
+  accountMenuName: document.getElementById('accountMenuName'),
+  mobileAccountMenu: document.getElementById('mobileAccountMenu'),
+  mobileAccountName: document.getElementById('mobileAccountName'),
+  mobileLogoutBtn: document.getElementById('mobileLogoutBtn'),
+  accountFeedback: document.getElementById('accountFeedback'),
   logoutBtn: document.getElementById('logoutBtn'),
 };
 
@@ -131,31 +139,78 @@ function closeMenu() {
 }
 
 // ─── Sesión en la UI ──────────────────────────────────────
+function displayNameFromEmail(email) {
+  const localPart = String(email || '').split('@')[0].trim();
+  if (!localPart) return 'Mi cuenta';
+  // Convierte santy.xs o santy_xs en un nombre legible sin mostrar el correo completo.
+  const words = localPart.replace(/[._+-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return words ? words.replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('es')) : 'Mi cuenta';
+}
+
+function closeAccountMenu() {
+  if (els.accountMenu) els.accountMenu.hidden = true;
+  if (els.userChip) els.userChip.setAttribute('aria-expanded', 'false');
+}
+
 function setUser(user) {
   const email = user && user.email ? String(user.email).trim() : '';
-  // Solo mostramos "sesión iniciada" si hay un email real
   const loggedIn = !!email;
 
   if (loggedIn) {
+    const displayName = displayNameFromEmail(email);
     if (els.guestNav) els.guestNav.hidden = true;
+    if (els.mobileGuestNav) els.mobileGuestNav.hidden = true;
     if (els.userNav) els.userNav.hidden = false;
+    if (els.userDisplayName) els.userDisplayName.textContent = displayName;
     if (els.userChip) {
-      els.userChip.textContent = email.length > 28 ? email.slice(0, 26) + '…' : email;
       els.userChip.title = email;
+      els.userChip.setAttribute('aria-label', `Menú de cuenta de ${displayName}`);
     }
+    if (els.accountMenuName) els.accountMenuName.textContent = displayName;
+    if (els.mobileAccountName) els.mobileAccountName.textContent = displayName;
+    if (els.mobileAccountMenu) els.mobileAccountMenu.hidden = false;
   } else {
     if (els.guestNav) els.guestNav.hidden = false;
+    if (els.mobileGuestNav) els.mobileGuestNav.hidden = false;
     if (els.userNav) els.userNav.hidden = true;
+    if (els.userDisplayName) els.userDisplayName.textContent = '';
     if (els.userChip) {
-      els.userChip.textContent = '';
       els.userChip.title = '';
+      els.userChip.removeAttribute('aria-label');
+    }
+    if (els.accountMenuName) els.accountMenuName.textContent = '';
+    if (els.mobileAccountName) els.mobileAccountName.textContent = '';
+    if (els.mobileAccountMenu) els.mobileAccountMenu.hidden = true;
+    closeAccountMenu();
+  }
+}
+
+function accountAction(action) {
+  closeAccountMenu();
+  if (els.accountFeedback) {
+    const messages = {
+      profile: 'La sección Perfil estará disponible próximamente.',
+      settings: 'La sección Configuración estará disponible próximamente.',
+      support: 'El centro de Soporte estará disponible próximamente.'
+    };
+    els.accountFeedback.textContent = messages[action] || '';
+    els.accountFeedback.hidden = !messages[action];
+    if (messages[action]) {
+      window.clearTimeout(accountAction.feedbackTimer);
+      accountAction.feedbackTimer = window.setTimeout(() => {
+        if (els.accountFeedback) els.accountFeedback.hidden = true;
+      }, 3500);
     }
   }
 }
 
 // ─── Auth ─────────────────────────────────────────────────
 async function register(email, password) {
-  const { data, error } = await sb.auth.signUp({ email, password });
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: new URL('./', window.location.href).href }
+  });
   if (error) throw error;
 
   // El trigger de Supabase suele crear el perfil; esto es respaldo
@@ -223,6 +278,25 @@ if (els.logoutBtn) {
     logout().catch((err) => console.error(err));
   });
 }
+if (els.mobileLogoutBtn) {
+  els.mobileLogoutBtn.addEventListener('click', () => {
+    logout().catch((err) => console.error(err));
+  });
+}
+if (els.userChip) {
+  els.userChip.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const willOpen = !!(els.accountMenu && els.accountMenu.hidden);
+    if (els.accountMenu) els.accountMenu.hidden = !willOpen;
+    els.userChip.setAttribute('aria-expanded', String(willOpen));
+  });
+}
+document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-account-action]')) {
+    accountAction(event.target.closest('[data-account-action]').dataset.accountAction);
+  }
+  if (!event.target.closest('#accountDropdown')) closeAccountMenu();
+});
 
 els.form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -262,27 +336,61 @@ window.addEventListener('resize', () => {
   }
 });
 
-// ─── Inicio ───────────────────────────────────────────────
+// ─── Inicio y retorno de confirmación ──────────────────────
+// No llamar a signOut() cuando aún no hay sesión: al volver del enlace
+// de confirmación, el SDK puede estar procesando el code/token de la URL.
+// Si se cierra sesión en ese momento, se puede borrar la sesión recién creada.
 (async function init() {
-  // getUser valida la sesión con el servidor; evita estados raros en localStorage
-  try {
-    const { data, error } = await sb.auth.getUser();
-    if (error || !data.user || !data.user.email) {
-      await sb.auth.signOut();
-      setUser(null);
-    } else {
-      setUser(data.user);
+  const params = new URLSearchParams(window.location.search);
+  const authError = params.get('error_description') || params.get('error');
+  const confirmationReturn = params.has('code') || params.get('type') === 'signup' ||
+    window.location.hash.includes('access_token=') || window.location.hash.includes('error=');
+
+  sb.auth.onAuthStateChange((event, session) => {
+    const user = session && session.user ? session.user : null;
+    setUser(user && user.email ? user : null);
+
+    if (event === 'SIGNED_IN' && confirmationReturn) {
+      // El enlace de confirmación ha generado una sesión válida.
+      msg('¡Correo confirmado! Has iniciado sesión en SantitosIA.');
+      if (els.modal.classList.contains('open')) {
+        setTimeout(closeAuth, 1400);
+      }
+      cleanAuthUrl();
     }
-  } catch (_) {
+  });
+
+  try {
+    // getSession permite que el cliente termine de restaurar/procesar la sesión
+    // sin cerrar sesión de forma preventiva.
+    const { data } = await sb.auth.getSession();
+    const user = data && data.session && data.session.user;
+    if (user && user.email) setUser(user);
+
+    if (authError) {
+      openAuth('login');
+      msg('No se pudo confirmar el correo: ' + decodeURIComponent(authError.replace(/\+/g, ' ')), true);
+      cleanAuthUrl();
+    } else if (confirmationReturn && user && user.email) {
+      openAuth('login');
+      msg('¡Correo confirmado! Has iniciado sesión en SantitosIA.');
+      setTimeout(closeAuth, 1400);
+      cleanAuthUrl();
+    } else if (confirmationReturn) {
+      // Si el proveedor confirma el correo pero no devuelve sesión, pedir login
+      // de forma clara en lugar de dejar una página sin explicación.
+      openAuth('login');
+      msg('¡Enlace de confirmación procesado! Inicia sesión para continuar.');
+      cleanAuthUrl();
+    }
+  } catch (err) {
+    console.error('No se pudo restaurar la sesión de SantitosIA:', err);
     setUser(null);
   }
-
-  sb.auth.onAuthStateChange((_event, session) => {
-    const user = session && session.user ? session.user : null;
-    if (user && !user.email) {
-      setUser(null);
-      return;
-    }
-    setUser(user);
-  });
 })();
+
+function cleanAuthUrl() {
+  // Elimina códigos/tokens de la barra de direcciones una vez procesados.
+  const clean = window.location.pathname + window.location.hash.replace(/access_token=[^&]+&?/g, '').replace(/&$/, '');
+  window.history.replaceState({}, document.title, clean || window.location.pathname);
+}
