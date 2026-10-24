@@ -69,6 +69,94 @@
     </button>
   </header>
 
+  <section class="chat-app" id="chatApp" aria-label="Chat de SantitosIA" hidden>
+    <aside class="chat-sidebar" id="chatSidebar">
+      <div class="chat-sidebar-brand">
+        <a class="chat-brand" href="#" id="chatBrandHome" aria-label="Volver al inicio">
+          <img src="assets/wolf-mark.png" alt="" class="chat-brand-wolf">
+          <span>Santitos<span>IA</span></span>
+        </a>
+        <button class="icon-button sidebar-collapse" id="closeChatSidebar" type="button" aria-label="Cerrar menú" title="Cerrar menú">×</button>
+      </div>
+      <button class="new-chat-button" id="newChatBtn" type="button"><span>＋</span> Nuevo chat <kbd>Ctrl K</kbd></button>
+      <nav class="chat-navigation" aria-label="Secciones del chat">
+        <button class="chat-nav-item active" type="button" data-chat-nav="chat"><span class="nav-glyph">◉</span> Chat</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="history"><span class="nav-glyph">◷</span> Historial</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="files"><span class="nav-glyph">▤</span> Archivos</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="settings"><span class="nav-glyph">⚙</span> Configuración</button>
+      </nav>
+      <div class="sidebar-section-label">RECIENTES</div>
+      <div class="recent-chat-list" id="recentChatList">
+        <button type="button" class="recent-chat empty-recent" disabled>Las conversaciones aparecerán aquí</button>
+      </div>
+      <div class="sidebar-spacer"></div>
+      <div class="plan-mini-card">
+        <div class="plan-mini-icon">✦</div>
+        <div class="plan-mini-copy"><strong id="chatPlanName">Santitos Jr</strong><span id="chatPlanDetail">Rápido · Gratis</span></div>
+        <span class="plan-mini-badge" id="chatPlanBadge">GRATIS</span>
+      </div>
+      <div class="chat-user-row">
+        <div class="chat-avatar" id="chatAvatar">S</div>
+        <div class="chat-user-copy"><strong id="chatUserName">Mi cuenta</strong><span>Cuenta personal</span></div>
+        <button class="icon-button chat-user-more" id="chatUserMenuBtn" type="button" aria-label="Opciones de cuenta" title="Opciones de cuenta">···</button>
+        <div class="chat-user-menu" id="chatUserMenu" hidden>
+          <button type="button" data-chat-account="profile">Perfil</button>
+          <button type="button" data-chat-account="settings">Configuración</button>
+          <button type="button" data-chat-account="support">Soporte</button>
+          <button type="button" class="chat-signout" id="chatLogoutBtn">Cerrar sesión</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="chat-main">
+      <header class="chat-topbar">
+        <button class="icon-button open-chat-sidebar" id="openChatSidebar" type="button" aria-label="Abrir menú" title="Abrir menú">☰</button>
+        <div class="chat-context"><span class="context-dot"></span><span>Tu espacio de conversación</span></div>
+        <div class="chat-topbar-actions">
+          <label class="model-picker" for="modelSelect"><span class="model-picker-mark">✧</span><span class="model-picker-label">Modelo</span>
+            <select id="modelSelect" aria-label="Seleccionar modelo"><option value="jr">Santitos Jr</option><option value="pro">Santitos</option></select>
+            <span class="select-chevron">⌄</span>
+          </label>
+          <button class="icon-button" id="webSearchBtn" type="button" aria-pressed="false" title="Activar búsqueda web" aria-label="Activar búsqueda web"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"></circle><path d="m16 16 4.2 4.2"></path></svg></button>
+          <button class="icon-button chat-settings-shortcut" type="button" data-chat-nav="settings" title="Configuración" aria-label="Configuración"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.9.2 1.7 1.7 0 0 0-.7 1.5v.2H8.8v-.2a1.7 1.7 0 0 0-.7-1.5 1.7 1.7 0 0 0-1.9-.2l-.2.1-1.8-3.1.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.4-.9h-.3v-3.6h.3a1.7 1.7 0 0 0 1.4-.9 1.7 1.7 0 0 0-.3-1.9l-.1-.1L6 4.5l.2.1a1.7 1.7 0 0 0 1.9-.2 1.7 1.7 0 0 0 .7-1.5v-.2h6.4v.2a1.7 1.7 0 0 0 .7 1.5 1.7 1.7 0 0 0 1.9.2l.2-.1 1.8 3.1-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.4.9h.3v3.6h-.3a1.7 1.7 0 0 0-1.4.9Z"></path></svg></button>
+        </div>
+      </header>
+
+      <div class="chat-stage" id="chatStage">
+        <div class="chat-welcome" id="chatWelcome">
+          <div class="welcome-mark-wrap"><div class="welcome-mark-glow"></div><img src="assets/wolf-mark.png" alt="Lobo de SantitosIA"></div>
+          <div class="welcome-eyebrow"><span class="context-dot"></span> LISTO PARA AYUDARTE</div>
+          <h1>¿Qué tienes en <span class="chat-gradient">mente?</span></h1>
+          <p>Pregúntame lo que quieras. Podemos hablar de Minecraft, tecnología, trabajo o cualquier duda del día a día.</p>
+          <div class="suggestion-grid">
+            <button class="suggestion-card" type="button" data-prompt="¿Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon">⌘</span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion-card" type="button" data-prompt="Explícame este tema de forma sencilla, con un ejemplo práctico."><span class="suggestion-icon cyan-icon">✧</span><span><strong>Aprender algo</strong><small>Explicaciones claras y ejemplos</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion-card" type="button" data-prompt="Ayúdame a comparar opciones y elegir la mejor para mi presupuesto."><span class="suggestion-icon blue-icon">◈</span><span><strong>Tomar una decisión</strong><small>Comparar ideas y opciones</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion-card" type="button" data-prompt="Traduce este texto al español manteniendo el significado y el formato."><span class="suggestion-icon pink-icon">文</span><span><strong>Traducir un texto</strong><small>Conserva el sentido y el formato</small></span><span class="suggestion-arrow">↗</span></button>
+          </div>
+        </div>
+        <div class="chat-messages" id="chatMessages" aria-live="polite" aria-label="Mensajes de la conversación"></div>
+      </div>
+
+      <footer class="chat-composer-area">
+        <div class="preview-notice" id="previewNotice"><span>ⓘ</span> Vista previa: todavía falta conectar el modelo de IA para generar respuestas reales.</div>
+        <div class="attachment-preview" id="attachmentPreview" hidden></div>
+        <form class="chat-composer" id="chatForm">
+          <input type="file" id="chatFileInput" hidden multiple accept="image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip">
+          <button type="button" class="composer-tool attach-tool" id="attachFileBtn" aria-label="Adjuntar archivo" title="Adjuntar archivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.4 11.4-7.8 7.8a5.2 5.2 0 0 1-7.4-7.4l8.1-8.1a3.5 3.5 0 0 1 4.9 4.9l-8.1 8.1a1.8 1.8 0 0 1-2.5-2.5l7.2-7.2"></path></svg></button>
+          <textarea id="chatInput" rows="1" placeholder="Escribe tu mensaje..." aria-label="Escribe tu pregunta" maxlength="8000"></textarea>
+          <div class="composer-right-tools">
+            <button type="button" class="composer-tool" id="imageFileBtn" title="Añadir imagen" aria-label="Añadir imagen"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect><circle cx="8.5" cy="9" r="1.5"></circle><path d="m4 17 5-5 4 4 3-3 4 4"></path></svg></button>
+            <span class="composer-divider"></span>
+            <button type="submit" class="send-button" id="sendChatBtn" aria-label="Enviar mensaje" title="Enviar mensaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg></button>
+          </div>
+        </form>
+        <div class="composer-footnote">SantitosIA puede cometer errores. Comprueba la información importante.</div>
+      </footer>
+    </div>
+    <div class="chat-toast" id="chatToast" role="status" aria-live="polite" hidden></div>
+  </section>
+
   <main>
     <section class="hero section-wrap">
       <div class="hero-copy">

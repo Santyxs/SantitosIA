@@ -183,6 +183,9 @@ function setUser(user) {
     if (els.mobileAccountMenu) els.mobileAccountMenu.hidden = true;
     closeAccountMenu();
   }
+  updateChatUser(loggedIn ? user : null);
+  if (loggedIn) showChatView();
+  else showLandingView();
 }
 
 function accountAction(action) {
@@ -334,6 +337,385 @@ window.addEventListener('resize', () => {
   if (window.innerWidth > 850 && els.navLinks.classList.contains('mobile-open')) {
     closeMenu();
   }
+});
+
+// ─── SantitosIA chat workspace (UI preview; the AI provider is not connected yet) ───
+const chatEls = {
+  app: document.getElementById('chatApp'),
+  sidebar: document.getElementById('chatSidebar'),
+  welcome: document.getElementById('chatWelcome'),
+  messages: document.getElementById('chatMessages'),
+  stage: document.getElementById('chatStage'),
+  form: document.getElementById('chatForm'),
+  input: document.getElementById('chatInput'),
+  send: document.getElementById('sendChatBtn'),
+  fileInput: document.getElementById('chatFileInput'),
+  attachmentPreview: document.getElementById('attachmentPreview'),
+  previewNotice: document.getElementById('previewNotice'),
+  recentList: document.getElementById('recentChatList'),
+  toast: document.getElementById('chatToast'),
+  userName: document.getElementById('chatUserName'),
+  avatar: document.getElementById('chatAvatar'),
+  userMenu: document.getElementById('chatUserMenu'),
+  model: document.getElementById('modelSelect'),
+};
+
+let chatUserId = null;
+let chatStorageKey = null;
+let chatSessions = [];
+let activeChatId = null;
+let activeChatSection = 'chat';
+let selectedAttachments = [];
+let webSearchEnabled = false;
+let toastTimer = null;
+
+function showChatView() {
+  if (!chatEls.app) return;
+  chatEls.app.hidden = false;
+  document.body.classList.add('chat-mode');
+  if (chatEls.app) chatEls.app.classList.remove('sidebar-open');
+  renderRecentChats();
+}
+
+function showLandingView() {
+  if (!chatEls.app) return;
+  chatEls.app.hidden = true;
+  document.body.classList.remove('chat-mode');
+  if (chatEls.app) chatEls.app.classList.remove('sidebar-open');
+  if (chatEls.userMenu) chatEls.userMenu.hidden = true;
+}
+
+function updateChatUser(user) {
+  chatUserId = user && user.id ? user.id : null;
+  chatStorageKey = chatUserId ? `santitosia:chat-history:${chatUserId}` : null;
+  const name = displayNameFromEmail(user && user.email);
+  if (chatEls.userName) chatEls.userName.textContent = user ? name : 'Mi cuenta';
+  if (chatEls.avatar) chatEls.avatar.textContent = (user ? name : 'S').charAt(0).toLocaleUpperCase('es');
+  if (chatEls.model) {
+    const preferred = safeRead(`santitosia:model:${chatUserId || 'guest'}`) || 'jr';
+    chatEls.model.value = preferred === 'pro' ? 'pro' : 'jr';
+    updatePlanCard();
+  }
+  chatSessions = loadChatSessions();
+  activeChatId = chatSessions.length ? chatSessions[0].id : null;
+  selectedAttachments = [];
+  renderAttachmentPreview();
+  if (activeChatId) renderConversation(activeChatId);
+  else showChatWelcome();
+  renderRecentChats();
+}
+
+function safeRead(key) {
+  try { return window.localStorage.getItem(key); } catch (_) { return null; }
+}
+function loadChatSessions() {
+  if (!chatStorageKey) return [];
+  try {
+    const data = JSON.parse(window.localStorage.getItem(chatStorageKey) || '[]');
+    if (!Array.isArray(data)) return [];
+    return data.filter((item) => item && typeof item.id === 'string' && Array.isArray(item.messages))
+      .slice(0, 30);
+  } catch (_) { return []; }
+}
+function saveChatSessions() {
+  if (!chatStorageKey) return;
+  try { window.localStorage.setItem(chatStorageKey, JSON.stringify(chatSessions.slice(0, 30))); }
+  catch (_) { showChatToast('No se ha podido guardar el historial en este navegador.'); }
+}
+function makeId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+function activeSession() {
+  return chatSessions.find((item) => item.id === activeChatId) || null;
+}
+function updatePlanCard() {
+  if (!chatEls.model) return;
+  const pro = chatEls.model.value === 'pro';
+  const name = document.getElementById('chatPlanName');
+  const detail = document.getElementById('chatPlanDetail');
+  const badge = document.getElementById('chatPlanBadge');
+  if (name) name.textContent = pro ? 'Santitos' : 'Santitos Jr';
+  if (detail) detail.textContent = pro ? 'Razonamiento avanzado' : 'Rápido · Gratis';
+  if (badge) badge.textContent = pro ? 'PREMIUM' : 'GRATIS';
+}
+function showChatToast(message) {
+  if (!chatEls.toast) return;
+  chatEls.toast.textContent = message;
+  chatEls.toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => { chatEls.toast.hidden = true; }, 3400);
+}
+function setActiveNav(section) {
+  activeChatSection = section;
+  document.querySelectorAll('[data-chat-nav]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.chatNav === section && button.classList.contains('chat-nav-item'));
+  });
+}
+function showChatWelcome() {
+  setActiveNav('chat');
+  if (chatEls.welcome) chatEls.welcome.hidden = false;
+  if (chatEls.messages) chatEls.messages.replaceChildren();
+  chatEls.previewNotice.hidden = false;
+  chatEls.stage.scrollTop = 0;
+}
+function renderConversation(id) {
+  const session = chatSessions.find((item) => item.id === id);
+  if (!session) { showChatWelcome(); return; }
+  activeChatId = id;
+  setActiveNav('chat');
+  chatEls.welcome.hidden = true;
+  chatEls.messages.replaceChildren();
+  chatEls.previewNotice.hidden = false;
+  session.messages.forEach((item) => addMessageToDOM(item, false));
+  chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
+  renderRecentChats();
+}
+function createMessageNode(item, addActions) {
+  const role = item.role === 'user' ? 'user' : 'assistant';
+  const row = document.createElement('article');
+  row.className = `chat-message ${role}-message`;
+  const avatar = document.createElement('div');
+  avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
+  if (role === 'assistant') {
+    const image = document.createElement('img');
+    image.src = 'assets/wolf-mark.png'; image.alt = 'SantitosIA'; avatar.append(image);
+  } else {
+    avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
+  }
+  const body = document.createElement('div'); body.className = 'message-body';
+  const meta = document.createElement('div'); meta.className = 'message-meta';
+  const name = document.createElement('span'); name.textContent = role === 'user' ? 'Tú' : 'SantitosIA'; meta.append(name);
+  if (role === 'assistant') {
+    const tag = document.createElement('span'); tag.className = 'message-tag';
+    tag.textContent = chatEls.model && chatEls.model.value === 'pro' ? 'SANTITOS' : 'SANTITOS JR'; meta.append(tag);
+  }
+  const time = document.createElement('time');
+  const date = new Date(item.timestamp || Date.now());
+  time.textContent = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); meta.append(time);
+  const bubble = document.createElement('div'); bubble.className = 'message-bubble'; bubble.textContent = item.content || '';
+  body.append(meta, bubble);
+  if (Array.isArray(item.attachments) && item.attachments.length) {
+    const files = document.createElement('div'); files.className = 'message-actions';
+    item.attachments.forEach((file) => {
+      const pill = document.createElement('span'); pill.className = 'attachment-pill';
+      pill.textContent = `▤ ${file.name}`; files.append(pill);
+    });
+    body.append(files);
+  }
+  if (role === 'assistant' && item.previewNote) {
+    const note = document.createElement('div'); note.className = 'preview-response-note';
+    const strong = document.createElement('strong'); strong.textContent = 'Modo de vista previa. ';
+    note.append(strong, document.createTextNode(item.previewNote)); body.append(note);
+  }
+  if (role === 'assistant' && addActions) {
+    const actions = document.createElement('div'); actions.className = 'message-actions';
+    const copy = document.createElement('button'); copy.className = 'message-action'; copy.type = 'button'; copy.textContent = '▢ Copiar';
+    copy.addEventListener('click', () => copyText(item.content || ''));
+    actions.append(copy); body.append(actions);
+  } else if (role === 'assistant' && !addActions) {
+    const actions = document.createElement('div'); actions.className = 'message-actions';
+    const copy = document.createElement('button'); copy.className = 'message-action'; copy.type = 'button'; copy.textContent = '▢ Copiar';
+    copy.addEventListener('click', () => copyText(item.content || ''));
+    actions.append(copy); body.append(actions);
+  }
+  if (role === 'user') row.append(body, avatar); else row.append(avatar, body);
+  return row;
+}
+function addMessageToDOM(item, scroll = true) {
+  chatEls.messages.append(createMessageNode(item, true));
+  if (scroll) chatEls.stage.scrollTo({ top: chatEls.stage.scrollHeight, behavior: 'smooth' });
+}
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
+    else {
+      const helper = document.createElement('textarea'); helper.value = text; helper.style.position = 'fixed'; helper.style.opacity = '0';
+      document.body.append(helper); helper.select(); document.execCommand('copy'); helper.remove();
+    }
+    showChatToast('Texto copiado.');
+  } catch (_) { showChatToast('No se ha podido copiar automáticamente.'); }
+}
+function renderRecentChats() {
+  if (!chatEls.recentList) return;
+  chatEls.recentList.replaceChildren();
+  const recent = [...chatSessions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 8);
+  if (!recent.length) {
+    const empty = document.createElement('button'); empty.type = 'button'; empty.className = 'recent-chat empty-recent'; empty.disabled = true;
+    empty.textContent = 'Las conversaciones aparecerán aquí'; chatEls.recentList.append(empty); return;
+  }
+  recent.forEach((session) => {
+    const button = document.createElement('button'); button.type = 'button';
+    button.className = 'recent-chat' + (session.id === activeChatId ? ' current' : '');
+    button.title = session.title; button.textContent = session.title;
+    button.addEventListener('click', () => { renderConversation(session.id); closeChatSidebar(); });
+    chatEls.recentList.append(button);
+  });
+}
+function renderAttachmentPreview() {
+  if (!chatEls.attachmentPreview) return;
+  chatEls.attachmentPreview.replaceChildren();
+  chatEls.attachmentPreview.hidden = selectedAttachments.length === 0;
+  selectedAttachments.forEach((file, index) => {
+    const pill = document.createElement('div'); pill.className = 'attachment-pill';
+    const icon = document.createElement('span'); icon.textContent = file.type.startsWith('image/') ? '▧' : '▤';
+    const name = document.createElement('span'); name.textContent = file.name; name.title = file.name;
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', `Quitar ${file.name}`);
+    remove.addEventListener('click', () => { selectedAttachments.splice(index, 1); renderAttachmentPreview(); });
+    pill.append(icon, name, remove); chatEls.attachmentPreview.append(pill);
+  });
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+}
+function showPanel(section) {
+  setActiveNav(section);
+  chatEls.welcome.hidden = true;
+  chatEls.messages.replaceChildren();
+  chatEls.previewNotice.hidden = section !== 'chat';
+  const panel = document.createElement('section'); panel.className = 'chat-panel-view';
+  const kicker = document.createElement('div'); kicker.className = 'panel-kicker';
+  const heading = document.createElement('h2'); const description = document.createElement('p');
+  if (section === 'history') {
+    kicker.textContent = 'TUS CONVERSACIONES'; heading.textContent = 'Historial';
+    description.textContent = chatSessions.length ? 'Abre una conversación anterior para continuar donde lo dejaste.' : 'Cuando empieces a conversar, tus chats recientes aparecerán aquí.';
+    if (chatSessions.length) {
+      const list = document.createElement('div'); list.className = 'panel-history-list';
+      [...chatSessions].sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)).forEach((session) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'panel-history-item';
+        const title = document.createElement('strong'); title.textContent = session.title;
+        const meta = document.createElement('small'); meta.textContent = `${session.messages.length} mensajes · ${new Date(session.updatedAt || Date.now()).toLocaleDateString('es-ES')}`;
+        button.append(title, meta); button.addEventListener('click', () => renderConversation(session.id)); list.append(button);
+      }); panel.append(kicker, heading, description, list);
+    } else panel.append(kicker, heading, description);
+  } else if (section === 'files') {
+    kicker.textContent = 'DOCUMENTOS E IMÁGENES'; heading.textContent = 'Tus archivos';
+    description.textContent = 'Puedes adjuntar imágenes o archivos desde el botón del clip junto al cuadro de mensaje. En esta versión de vista previa, los archivos solo se muestran en la conversación; todavía no se procesan con un modelo de IA.';
+    const action = document.createElement('button'); action.type = 'button'; action.className = 'new-chat-button'; action.textContent = '＋ Seleccionar archivos'; action.addEventListener('click', () => chatEls.fileInput.click());
+    panel.append(kicker, heading, description, action);
+  } else if (section === 'settings') {
+    kicker.textContent = 'PERSONALIZA TU EXPERIENCIA'; heading.textContent = 'Configuración';
+    description.textContent = 'Elige qué experiencia quieres probar. La selección se guarda en este navegador para tu cuenta.';
+    const label = document.createElement('label'); label.textContent = 'Modelo de conversación'; label.style.cssText = 'display:block;font-size:12px;color:#b6bfdb;margin:18px 0 8px';
+    const select = document.createElement('select'); select.className = 'settings-model-select'; select.innerHTML = '<option value="jr">Santitos Jr · Gratis</option><option value="pro">Santitos · Premium</option>'; select.value = chatEls.model.value;
+    select.addEventListener('change', () => { chatEls.model.value = select.value; updatePlanCard(); safeSave(`santitosia:model:${chatUserId || 'guest'}`, select.value); showChatToast('Modelo seleccionado para esta vista previa.'); });
+    panel.append(kicker, heading, description, label, select);
+  }
+  chatEls.messages.append(panel);
+  chatEls.stage.scrollTop = 0;
+}
+function safeSave(key, value) { try { window.localStorage.setItem(key, value); } catch (_) {} }
+function closeChatSidebar() { if (chatEls.app) chatEls.app.classList.remove('sidebar-open'); }
+function openChatSection(section) {
+  closeChatSidebar();
+  if (section === 'chat') {
+    const session = activeSession();
+    if (session) renderConversation(session.id); else showChatWelcome();
+  } else showPanel(section);
+}
+function startNewChat() {
+  activeChatId = null; selectedAttachments = []; renderAttachmentPreview();
+  chatEls.input.value = ''; resizeChatInput();
+  showChatWelcome(); renderRecentChats(); chatEls.input.focus(); closeChatSidebar();
+}
+function resizeChatInput() {
+  if (!chatEls.input) return;
+  chatEls.input.style.height = 'auto';
+  chatEls.input.style.height = `${Math.min(chatEls.input.scrollHeight, 180)}px`;
+}
+function sendChatMessage(text) {
+  const content = String(text || '').trim();
+  if (!content && !selectedAttachments.length) return;
+  if (!chatUserId) { showLandingView(); openAuth('login'); return; }
+  // User text and attachment names stay local in this UI preview; no AI service is called.
+  if (!activeSession()) {
+    const firstLine = content.split(/\r?\n/)[0].trim();
+    const title = firstLine ? (firstLine.length > 42 ? firstLine.slice(0, 39) + '…' : firstLine) : (selectedAttachments[0] && selectedAttachments[0].name) || 'Nuevo chat';
+    const session = { id: makeId(), title, createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+    chatSessions.unshift(session); activeChatId = session.id;
+  }
+  const session = activeSession();
+  if (!session) return;
+  const attached = selectedAttachments.map((file) => ({ name: file.name, type: file.type || 'application/octet-stream', size: file.size || 0 }));
+  const userMessage = { role: 'user', content: content || 'He adjuntado archivos.', timestamp: Date.now(), attachments: attached };
+  session.messages.push(userMessage);
+  chatEls.welcome.hidden = true;
+  chatEls.messages.replaceChildren(...session.messages.slice(0, -1).map((item) => createMessageNode(item, true)));
+  addMessageToDOM(userMessage);
+  const hasFiles = attached.length > 0;
+  const assistantMessage = {
+    role: 'assistant', timestamp: Date.now() + 1,
+    content: 'La interfaz de conversación está funcionando, pero el modelo de IA todavía no está conectado. Tu mensaje se ha guardado en este navegador y no se ha enviado a ningún servicio de IA.',
+    previewNote: hasFiles ? 'Los nombres de los archivos se han añadido al chat, pero su contenido todavía no se ha enviado ni analizado.' : 'Cuando conectemos el proveedor de IA, aquí aparecerá una respuesta real a tu pregunta.'
+  };
+  session.messages.push(assistantMessage); session.updatedAt = Date.now();
+  selectedAttachments = []; renderAttachmentPreview();
+  window.setTimeout(() => {
+    if (activeChatId !== session.id || activeChatSection !== 'chat') return;
+    addMessageToDOM(assistantMessage);
+    chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
+  }, 320);
+  saveChatSessions(); renderRecentChats();
+  if (activeChatSection !== 'chat') renderConversation(session.id);
+}
+
+// Workspace event bindings
+if (chatEls.form) {
+  chatEls.form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const text = chatEls.input.value;
+    chatEls.input.value = ''; resizeChatInput();
+    sendChatMessage(text);
+  });
+}
+if (chatEls.input) {
+  chatEls.input.addEventListener('input', resizeChatInput);
+  chatEls.input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault(); chatEls.form.requestSubmit();
+    }
+  });
+}
+if (chatEls.fileInput) {
+  chatEls.fileInput.addEventListener('change', () => {
+    const files = Array.from(chatEls.fileInput.files || []);
+    const available = Math.max(0, 8 - selectedAttachments.length);
+    selectedAttachments.push(...files.slice(0, available));
+    if (files.length > available) showChatToast('Puedes seleccionar hasta 8 archivos por mensaje en esta vista previa.');
+    renderAttachmentPreview(); chatEls.fileInput.value = '';
+  });
+}
+document.getElementById('attachFileBtn')?.addEventListener('click', () => chatEls.fileInput.click());
+document.getElementById('imageFileBtn')?.addEventListener('click', () => { chatEls.fileInput.accept = 'image/*'; chatEls.fileInput.click(); chatEls.fileInput.accept = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip'; });
+document.getElementById('newChatBtn')?.addEventListener('click', startNewChat);
+document.getElementById('chatBrandHome')?.addEventListener('click', (event) => { event.preventDefault(); showLandingView(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+document.getElementById('openChatSidebar')?.addEventListener('click', () => chatEls.app.classList.add('sidebar-open'));
+document.getElementById('closeChatSidebar')?.addEventListener('click', closeChatSidebar);
+chatEls.app?.addEventListener('click', (event) => {
+  if (event.target === chatEls.app && chatEls.app.classList.contains('sidebar-open')) closeChatSidebar();
+  const nav = event.target.closest('[data-chat-nav]');
+  if (nav) openChatSection(nav.dataset.chatNav);
+  const prompt = event.target.closest('[data-prompt]');
+  if (prompt) { openChatSection('chat'); chatEls.input.value = prompt.dataset.prompt; resizeChatInput(); chatEls.input.focus(); }
+  const accountButton = event.target.closest('[data-chat-account]');
+  if (accountButton) { chatEls.userMenu.hidden = true; accountAction(accountButton.dataset.chatAccount); showChatToast(({profile:'La sección Perfil estará disponible próximamente.',settings:'La configuración completa estará disponible próximamente.',support:'El centro de Soporte estará disponible próximamente.'})[accountButton.dataset.chatAccount]); }
+});
+document.getElementById('chatUserMenuBtn')?.addEventListener('click', (event) => { event.stopPropagation(); chatEls.userMenu.hidden = !chatEls.userMenu.hidden; });
+document.getElementById('chatLogoutBtn')?.addEventListener('click', () => logout().catch((error) => { console.error(error); showChatToast('No se ha podido cerrar la sesión.'); }));
+document.addEventListener('click', (event) => {
+  if (chatEls.userMenu && !event.target.closest('.chat-user-row')) chatEls.userMenu.hidden = true;
+});
+chatEls.model?.addEventListener('change', () => {
+  updatePlanCard(); safeSave(`santitosia:model:${chatUserId || 'guest'}`, chatEls.model.value);
+  showChatToast(chatEls.model.value === 'pro' ? 'Santitos seleccionado (vista previa).' : 'Santitos Jr seleccionado (vista previa).');
+});
+document.getElementById('webSearchBtn')?.addEventListener('click', (event) => {
+  webSearchEnabled = !webSearchEnabled;
+  event.currentTarget.setAttribute('aria-pressed', String(webSearchEnabled));
+  showChatToast(webSearchEnabled ? 'Búsqueda web activada visualmente; falta conectar la herramienta.' : 'Búsqueda web desactivada.');
+});
+document.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !chatEls.app.hidden) { event.preventDefault(); startNewChat(); }
+  if (event.key === 'Escape' && chatEls.app.classList.contains('sidebar-open')) closeChatSidebar();
 });
 
 // ─── Inicio y retorno de confirmación ──────────────────────
