@@ -184,7 +184,8 @@ function setUser(user) {
     closeAccountMenu();
   }
   updateChatUser(loggedIn ? user : null);
-  if (loggedIn) showChatView();
+  // La portada permanece como página principal; el chat vive en #chat.
+  if (loggedIn && window.location.hash === '#chat') showChatView();
   else showLandingView();
 }
 
@@ -687,7 +688,7 @@ if (chatEls.fileInput) {
 document.getElementById('attachFileBtn')?.addEventListener('click', () => chatEls.fileInput.click());
 document.getElementById('imageFileBtn')?.addEventListener('click', () => { chatEls.fileInput.accept = 'image/*'; chatEls.fileInput.click(); chatEls.fileInput.accept = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip'; });
 document.getElementById('newChatBtn')?.addEventListener('click', startNewChat);
-document.getElementById('chatBrandHome')?.addEventListener('click', (event) => { event.preventDefault(); showLandingView(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+document.getElementById('chatBrandHome')?.addEventListener('click', (event) => { event.preventDefault(); window.location.hash = ''; showLandingView(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 document.getElementById('openChatSidebar')?.addEventListener('click', () => chatEls.app.classList.add('sidebar-open'));
 document.getElementById('closeChatSidebar')?.addEventListener('click', closeChatSidebar);
 chatEls.app?.addEventListener('click', (event) => {
@@ -722,6 +723,21 @@ document.addEventListener('keydown', (event) => {
 // No llamar a signOut() cuando aún no hay sesión: al volver del enlace
 // de confirmación, el SDK puede estar procesando el code/token de la URL.
 // Si se cierra sesión en ese momento, se puede borrar la sesión recién creada.
+// Navegación por hash: /SantitosIA/ conserva la portada y /SantitosIA/#chat abre el chat.
+window.addEventListener('hashchange', async () => {
+  if (window.location.hash === '#chat') {
+    try {
+      const { data } = await sb.auth.getSession();
+      const user = data && data.session && data.session.user;
+      if (user && user.email) { setUser(user); showChatView(); }
+      else { showLandingView(); openAuth('login'); }
+    } catch (error) { console.error('No se pudo abrir el chat:', error); showLandingView(); }
+  } else {
+    showLandingView();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+
 (async function init() {
   const params = new URLSearchParams(window.location.search);
   const authError = params.get('error_description') || params.get('error');
