@@ -45,6 +45,7 @@ const els = {
 };
 
 let mode = 'register'; // 'register' | 'login'
+let currentAuthUser = null;
 
 // ─── Helpers UI ───────────────────────────────────────────
 function msg(text, error) {
@@ -153,6 +154,7 @@ function closeAccountMenu() {
 }
 
 function setUser(user) {
+  currentAuthUser = user && user.email ? user : null;
   const email = user && user.email ? String(user.email).trim() : '';
   const loggedIn = !!email;
 
@@ -253,6 +255,11 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-open-auth]');
   if (t) {
     e.preventDefault();
+    // Las llamadas a la acción principal deben reutilizar la sesión existente.
+    if (t.dataset.openAuth === 'register' && currentAuthUser) {
+      window.location.hash = '#chat';
+      return;
+    }
     openAuth(t.dataset.openAuth);
   }
 });
