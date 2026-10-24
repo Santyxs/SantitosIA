@@ -534,7 +534,7 @@ function createMessageNode(item, addActions) {
   avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
   if (role === 'assistant') {
     const image = document.createElement('img');
-    image.src = 'assets/wolf-mark.png'; image.alt = 'SantitosIA'; avatar.append(image);
+    image.src = 'assets/logo.png'; image.alt = 'SantitosIA'; avatar.append(image);
   } else {
     avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
   }
