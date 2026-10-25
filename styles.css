@@ -1246,14 +1246,21 @@ body.chat-mode .chat-app{display:flex}
 
 /* Logo personalizado en configuración */
 .settings-logo-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.settings-logo-preview{
+.settings-logo-preview,
+.settings-user-avatar-preview{
   width:72px;height:72px;flex:0 0 72px;border-radius:50%;
   overflow:hidden;display:grid;place-items:center;
   border:1px solid rgba(140,120,255,.28);
-  background:rgba(20,24,48,.8);
-  box-shadow:0 0 18px rgba(100,80,255,.15);
+  background:linear-gradient(145deg,#9a73ff,#2874b7);
+  box-shadow:0 0 0 3px rgba(129,102,255,.12);
+  position:relative;
 }
-.settings-logo-preview img{width:100%;height:100%;object-fit:cover}
+.settings-logo-preview img,
+.settings-user-avatar-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.settings-avatar-placeholder{
+  font:700 26px "DM Sans",sans-serif;color:#fff;
+  line-height:1;user-select:none;
+}
 .settings-logo-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .settings-secondary-btn{
   border:1px solid rgba(145,132,255,.35);
@@ -1302,10 +1309,5 @@ body.chat-compact .chat-stage{padding-top:18px}
   border-radius:50%;
   display:block;
 }
-.settings-logo-preview{position:relative}
-.settings-avatar-placeholder{
-  position:absolute;inset:0;display:grid;place-items:center;
-  font:700 22px "DM Sans",sans-serif;color:#c8c6ff;
-  pointer-events:none;
-}
-.settings-logo-preview img[style*="0.35"] + .settings-avatar-placeholder{opacity:1}
+.settings-user-avatar-preview.has-photo,
+.settings-logo-preview.has-photo{background:transparent;border-color:rgba(140,120,255,.35)}
