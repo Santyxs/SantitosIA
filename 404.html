@@ -6,12 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07071a">
   <meta name="description" content="SantitosIA: tu IA, siempre contigo. Un asistente para videojuegos, dudas cotidianas y mucho más.">
+  <meta name="application-name" content="SantitosIA">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SantitosIA">
+  <meta property="og:title" content="SantitosIA — Tu IA, siempre contigo">
+  <meta property="og:description" content="Un asistente para videojuegos, dudas cotidianas y mucho más. Empieza gratis con Santitos Jr.">
+  <meta property="og:image" content="https://santyxs.github.io/SantitosIA/assets/banner.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="455">
+  <meta property="og:url" content="https://santyxs.github.io/SantitosIA/">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SantitosIA — Tu IA, siempre contigo">
+  <meta name="twitter:description" content="Un asistente para videojuegos, dudas cotidianas y mucho más.">
+  <meta name="twitter:image" content="https://santyxs.github.io/SantitosIA/assets/banner.png">
+  <link rel="canonical" href="https://santyxs.github.io/SantitosIA/">
   <title>SantitosIA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png">
-  <link rel="apple-touch-icon" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/icono-app.png">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -160,6 +179,7 @@
           <div class="welcome-eyebrow"><span class="context-dot"></span> LISTO PARA AYUDARTE</div>
           <h1>¿Qué tienes en <span class="chat-gradient">mente?</span></h1>
           <p>Pregúntame lo que quieras. Podemos hablar de Minecraft, tecnología, trabajo o cualquier duda del día a día.</p>
+          <p class="shortcut-hint">Atajo: <kbd>Ctrl</kbd> + <kbd>K</kbd> para un chat nuevo</p>
           <div class="suggestion-grid">
             <button class="suggestion-card" type="button" data-prompt="¿Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon">⌘</span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow">↗</span></button>
             <button class="suggestion-card" type="button" data-prompt="Explícame este tema de forma sencilla, con un ejemplo práctico."><span class="suggestion-icon cyan-icon">✧</span><span><strong>Aprender algo</strong><small>Explicaciones claras y ejemplos</small></span><span class="suggestion-arrow">↗</span></button>
@@ -171,7 +191,7 @@
       </main>
 
       <footer class="chat-composer-area">
-        <div class="preview-notice" id="previewNotice"><span>ⓘ</span> Vista previa: todavía falta conectar el modelo de IA para generar respuestas reales.</div>
+        <div class="preview-notice" id="previewNotice"><span>ⓘ</span> Modo vista previa: las respuestas son de demostración hasta conectar el modelo de IA.</div>
         <div class="attachment-preview" id="attachmentPreview" hidden></div>
         <form class="chat-composer" id="chatForm">
           <input type="file" id="chatFileInput" hidden multiple accept="image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip">
