@@ -418,11 +418,39 @@ function updateChatUser(user) {
   if (activeChatId) renderConversation(activeChatId);
   else showChatWelcome();
   renderRecentChats();
+  applyUiPreferences();
 }
 
 function safeRead(key) {
   try { return window.localStorage.getItem(key); } catch (_) { return null; }
 }
+
+const DEFAULT_LOGO_SRC = 'assets/logo.png';
+function logoStorageKey() {
+  return `santitosia:custom-logo:${chatUserId || 'guest'}`;
+}
+function getActiveLogoSrc() {
+  return safeRead(logoStorageKey()) || DEFAULT_LOGO_SRC;
+}
+function clearCustomLogo() {
+  try { window.localStorage.removeItem(logoStorageKey()); } catch (_) {}
+}
+function applyCustomLogoEverywhere() {
+  const src = getActiveLogoSrc();
+  document.querySelectorAll(
+    '.brand-mark img, .chat-brand-wolf, .welcome-mark-wrap img, .wolf-emblem img, .auth-logo img, .message-avatar img, .settings-logo-preview img'
+  ).forEach((img) => {
+    if (img && img.tagName === 'IMG') img.src = src;
+  });
+}
+function applyUiPreferences() {
+  const compact = safeRead(`santitosia:compact:${chatUserId || 'guest'}`) === '1';
+  const hints = safeRead(`santitosia:hints:${chatUserId || 'guest'}`) !== '0';
+  document.body.classList.toggle('chat-compact', compact);
+  document.body.classList.toggle('hide-shortcut-hints', !hints);
+  applyCustomLogoEverywhere();
+}
+
 function loadChatSessions() {
   if (!chatStorageKey) return [];
   try {
@@ -506,7 +534,7 @@ function showTypingIndicator() {
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
   const image = document.createElement('img');
-  image.src = 'assets/logo.png';
+  image.src = getActiveLogoSrc();
   image.alt = 'SantitosIA';
   avatar.append(image);
   const body = document.createElement('div');
@@ -570,7 +598,7 @@ function createMessageNode(item, addActions) {
   avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
   if (role === 'assistant') {
     const image = document.createElement('img');
-    image.src = 'assets/logo.png'; image.alt = 'SantitosIA'; avatar.append(image);
+    image.src = getActiveLogoSrc(); image.alt = 'SantitosIA'; avatar.append(image);
   } else {
     avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
   }
@@ -691,7 +719,7 @@ function showPanel(section) {
   } else if (section === 'settings') {
     kicker.textContent = 'PERSONALIZA TU EXPERIENCIA';
     heading.textContent = 'Configuración';
-    description.textContent = 'Ajusta el modelo, las preferencias de esta cuenta y el almacenamiento local. Los cambios se guardan en este navegador.';
+    description.textContent = 'Ajusta tu cuenta, el logo de la interfaz y las preferencias guardadas en este navegador.';
 
     const settingsBody = document.createElement('div');
     settingsBody.className = 'settings-body';
@@ -717,46 +745,76 @@ function showPanel(section) {
       : 'Sesión local en este navegador';
     accountMeta.append(accountName, accountDetail);
     const planPill = document.createElement('span');
-    planPill.className = 'settings-plan-pill';
-    const isPro = chatEls.model && chatEls.model.value === 'pro';
-    planPill.textContent = isPro ? 'Premium' : 'Gratis';
-    planPill.classList.toggle('pro', isPro);
+    planPill.className = 'settings-plan-pill' + ((chatEls.model && chatEls.model.value === 'pro') ? ' pro' : '');
+    planPill.textContent = (chatEls.model && chatEls.model.value === 'pro') ? 'Premium' : 'Gratis';
     accountRow.append(accountAvatar, accountMeta, planPill);
     accountCard.append(accountTitle, accountRow);
 
-    // Model cards
-    const modelCard = document.createElement('div');
-    modelCard.className = 'settings-card';
-    const modelTitle = document.createElement('div');
-    modelTitle.className = 'settings-card-title';
-    modelTitle.innerHTML = '<span class="settings-card-icon">✧</span><span>Modelo de conversación</span>';
-    const modelHint = document.createElement('p');
-    modelHint.className = 'settings-hint';
-    modelHint.textContent = 'El modelo activo también se puede cambiar desde la barra superior del chat.';
-    const modelGrid = document.createElement('div');
-    modelGrid.className = 'settings-model-grid';
-
-    function makeModelOption(value, name, detail, badge, badgeClass) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'settings-model-option' + ((chatEls.model && chatEls.model.value === value) ? ' active' : '');
-      btn.dataset.model = value;
-      btn.innerHTML = `<span class="settings-model-top"><strong>${name}</strong><span class="settings-model-badge ${badgeClass}">${badge}</span></span><small>${detail}</small>`;
-      btn.addEventListener('click', () => {
-        setModelValue(value);
-        modelGrid.querySelectorAll('.settings-model-option').forEach((el) => {
-          el.classList.toggle('active', el.dataset.model === value);
-        });
-        planPill.textContent = value === 'pro' ? 'Premium' : 'Gratis';
-        planPill.classList.toggle('pro', value === 'pro');
-      });
-      return btn;
-    }
-    modelGrid.append(
-      makeModelOption('jr', 'Santitos Jr', 'Rápido, cercano y gratuito. Ideal para el día a día.', 'Gratis', 'free'),
-      makeModelOption('pro', 'Santitos', 'Más profundidad, búsqueda web y análisis de archivos.', 'Premium', 'pro')
-    );
-    modelCard.append(modelTitle, modelHint, modelGrid);
+    // Logo card
+    const logoCard = document.createElement('div');
+    logoCard.className = 'settings-card';
+    const logoTitle = document.createElement('div');
+    logoTitle.className = 'settings-card-title';
+    logoTitle.innerHTML = '<span class="settings-card-icon">◈</span><span>Logo de la interfaz</span>';
+    const logoHint = document.createElement('p');
+    logoHint.className = 'settings-hint';
+    logoHint.textContent = 'Cambia el logo que se muestra en el chat, la cabecera y los mensajes. Se guarda solo en este navegador.';
+    const logoRow = document.createElement('div');
+    logoRow.className = 'settings-logo-row';
+    const logoPreview = document.createElement('div');
+    logoPreview.className = 'settings-logo-preview';
+    const logoImg = document.createElement('img');
+    logoImg.src = getActiveLogoSrc();
+    logoImg.alt = 'Logo actual';
+    logoPreview.append(logoImg);
+    const logoActions = document.createElement('div');
+    logoActions.className = 'settings-logo-actions';
+    const logoFile = document.createElement('input');
+    logoFile.type = 'file';
+    logoFile.accept = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif';
+    logoFile.hidden = true;
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'settings-secondary-btn';
+    uploadBtn.textContent = 'Subir imagen';
+    uploadBtn.addEventListener('click', () => logoFile.click());
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'settings-ghost-btn';
+    resetBtn.textContent = 'Restaurar logo';
+    resetBtn.addEventListener('click', () => {
+      clearCustomLogo();
+      logoImg.src = DEFAULT_LOGO_SRC;
+      applyCustomLogoEverywhere();
+      showChatToast('Logo restaurado.');
+    });
+    logoFile.addEventListener('change', () => {
+      const file = logoFile.files && logoFile.files[0];
+      if (!file) return;
+      if (file.size > 2.5 * 1024 * 1024) {
+        showChatToast('La imagen es demasiado grande (máx. 2,5 MB).');
+        logoFile.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (!dataUrl.startsWith('data:image/')) {
+          showChatToast('No se pudo leer la imagen.');
+          return;
+        }
+        safeSave(logoStorageKey(), dataUrl);
+        logoImg.src = dataUrl;
+        applyCustomLogoEverywhere();
+        showChatToast('Logo actualizado en este navegador.');
+      };
+      reader.onerror = () => showChatToast('No se pudo cargar la imagen.');
+      reader.readAsDataURL(file);
+      logoFile.value = '';
+    });
+    logoActions.append(uploadBtn, resetBtn, logoFile);
+    logoRow.append(logoPreview, logoActions);
+    logoCard.append(logoTitle, logoHint, logoRow);
 
     // Preferences
     const prefsCard = document.createElement('div');
@@ -765,27 +823,68 @@ function showPanel(section) {
     prefsTitle.className = 'settings-card-title';
     prefsTitle.innerHTML = '<span class="settings-card-icon">⚙</span><span>Preferencias</span>';
 
-    const webRow = document.createElement('div');
-    webRow.className = 'settings-toggle-row';
-    const webCopy = document.createElement('div');
-    webCopy.className = 'settings-toggle-copy';
-    webCopy.innerHTML = '<strong>Búsqueda web</strong><span>Marca la herramienta de búsqueda en la barra del chat (vista previa).</span>';
-    const webToggle = document.createElement('button');
-    webToggle.type = 'button';
-    webToggle.className = 'settings-toggle' + (webSearchEnabled ? ' on' : '');
-    webToggle.setAttribute('role', 'switch');
-    webToggle.setAttribute('aria-checked', String(!!webSearchEnabled));
-    webToggle.innerHTML = '<span class="settings-toggle-knob"></span>';
-    webToggle.addEventListener('click', () => {
-      webSearchEnabled = !webSearchEnabled;
-      webToggle.classList.toggle('on', webSearchEnabled);
-      webToggle.setAttribute('aria-checked', String(webSearchEnabled));
-      const btn = document.getElementById('webSearchBtn');
-      if (btn) btn.setAttribute('aria-pressed', String(webSearchEnabled));
-      showChatToast(webSearchEnabled ? 'Búsqueda web activada (vista previa).' : 'Búsqueda web desactivada.');
-    });
-    webRow.append(webCopy, webToggle);
-    prefsCard.append(prefsTitle, webRow);
+    function makeToggle(key, title, subtitle, initial, onChange) {
+      const row = document.createElement('div');
+      row.className = 'settings-toggle-row';
+      const copy = document.createElement('div');
+      copy.className = 'settings-toggle-copy';
+      copy.innerHTML = `<strong>${title}</strong><span>${subtitle}</span>`;
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'settings-toggle' + (initial ? ' on' : '');
+      toggle.setAttribute('role', 'switch');
+      toggle.setAttribute('aria-checked', String(!!initial));
+      toggle.innerHTML = '<span class="settings-toggle-knob"></span>';
+      toggle.addEventListener('click', () => {
+        const next = !toggle.classList.contains('on');
+        toggle.classList.toggle('on', next);
+        toggle.setAttribute('aria-checked', String(next));
+        onChange(next);
+      });
+      row.append(copy, toggle);
+      return row;
+    }
+
+    const webRow = makeToggle(
+      'web',
+      'Búsqueda web',
+      'Activa el botón de búsqueda en la barra del chat (vista previa).',
+      webSearchEnabled,
+      (next) => {
+        webSearchEnabled = next;
+        const btn = document.getElementById('webSearchBtn');
+        if (btn) btn.setAttribute('aria-pressed', String(next));
+        showChatToast(next ? 'Búsqueda web activada (vista previa).' : 'Búsqueda web desactivada.');
+      }
+    );
+
+    const compactInitial = safeRead(`santitosia:compact:${chatUserId || 'guest'}`) === '1';
+    const compactRow = makeToggle(
+      'compact',
+      'Modo compacto',
+      'Reduce el espacio entre mensajes para ver más conversación.',
+      compactInitial,
+      (next) => {
+        safeSave(`santitosia:compact:${chatUserId || 'guest'}`, next ? '1' : '0');
+        document.body.classList.toggle('chat-compact', next);
+        showChatToast(next ? 'Modo compacto activado.' : 'Modo compacto desactivado.');
+      }
+    );
+
+    const hintsInitial = safeRead(`santitosia:hints:${chatUserId || 'guest'}`) !== '0';
+    const hintsRow = makeToggle(
+      'hints',
+      'Mostrar atajos',
+      'Muestra la pista de Ctrl+K en la pantalla de bienvenida.',
+      hintsInitial,
+      (next) => {
+        safeSave(`santitosia:hints:${chatUserId || 'guest'}`, next ? '1' : '0');
+        document.body.classList.toggle('hide-shortcut-hints', !next);
+        showChatToast(next ? 'Atajos visibles.' : 'Atajos ocultos.');
+      }
+    );
+
+    prefsCard.append(prefsTitle, webRow, compactRow, hintsRow);
 
     // Data / storage
     const dataCard = document.createElement('div');
@@ -822,12 +921,7 @@ function showPanel(section) {
     dataActions.append(clearBtn);
     dataCard.append(dataTitle, dataHint, dataActions);
 
-    // About
-    const aboutCard = document.createElement('div');
-    aboutCard.className = 'settings-card settings-about';
-    aboutCard.innerHTML = '<div class="settings-card-title"><span class="settings-card-icon">?</span><span>Acerca de SantitosIA</span></div><p class="settings-hint">Versión de vista previa. La autenticación funciona con Supabase; el modelo de IA todavía no está conectado. Tus chats se guardan solo en este navegador.</p>';
-
-    settingsBody.append(accountCard, modelCard, prefsCard, dataCard, aboutCard);
+    settingsBody.append(accountCard, logoCard, prefsCard, dataCard);
     panel.append(kicker, heading, description, settingsBody);
   }
   chatEls.messages.append(panel);
