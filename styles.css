@@ -1311,3 +1311,80 @@ body.chat-compact .chat-stage{padding-top:18px}
 }
 .settings-user-avatar-preview.has-photo,
 .settings-logo-preview.has-photo{background:transparent;border-color:rgba(140,120,255,.35)}
+
+
+/* Historial con acciones */
+.panel-search{
+  width:100%;margin:16px 0 8px;padding:12px 14px;border-radius:11px;
+  border:1px solid rgba(144,126,255,.25);background:#0c1630;color:#f1efff;
+  font:13px "DM Sans",sans-serif;outline:none;
+}
+.panel-search:focus{border-color:rgba(88,216,245,.55)}
+.panel-history-row{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.panel-history-main{display:flex;flex-direction:column;gap:5px;text-align:left;border:0;background:transparent;color:inherit;cursor:pointer;padding:0}
+.panel-history-tools{display:flex;flex-wrap:wrap;gap:6px}
+.panel-tool-btn{
+  border:1px solid rgba(130,146,222,.2);background:rgba(255,255,255,.03);
+  color:#c5cbe6;border-radius:8px;padding:6px 10px;font:600 11px "DM Sans",sans-serif;cursor:pointer;
+}
+.panel-tool-btn:hover{background:rgba(120,100,255,.12);border-color:rgba(150,124,255,.4);color:#fff}
+
+/* Archivos */
+.panel-files-list{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.panel-file-item{
+  display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  padding:12px 14px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(130,146,222,.16);background:rgba(9,17,36,.7);color:#eceeff;
+}
+.panel-file-item:hover{border-color:rgba(150,124,255,.4);background:rgba(94,71,183,.12)}
+.panel-file-icon{font-size:18px;opacity:.9}
+.panel-file-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.panel-file-copy strong{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel-file-copy small{font-size:10.5px;color:#8995b7}
+
+/* Email en configuración */
+.settings-email-block{display:grid;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(130,146,222,.12)}
+.settings-email-block label{font-size:12px;color:#b6bfdb}
+.settings-text-input{
+  width:100%;padding:12px 14px;border-radius:10px;
+  border:1px solid rgba(144,126,255,.25);background:#0c1630;color:#f1efff;
+  font:13px "DM Sans",sans-serif;outline:none;
+}
+.settings-text-input:focus{border-color:rgba(88,216,245,.55)}
+
+/* Página de precios */
+.pricing-page{padding:70px 0 90px;border-top:1px solid rgba(255,255,255,.05)}
+.pricing-table{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+@media(max-width:720px){.pricing-table{grid-template-columns:1fr}}
+.price-card{
+  position:relative;padding:28px 24px;border-radius:20px;
+  border:1px solid rgba(180,168,255,.14);background:linear-gradient(150deg,#151426,#10101c);
+}
+.price-card-featured{border-color:rgba(72,215,240,.28);background:linear-gradient(150deg,#111c2a,#10101d);box-shadow:0 16px 40px rgba(40,80,160,.12)}
+.price-badge{
+  position:absolute;top:14px;right:14px;font:700 9px/1 "DM Sans",sans-serif;letter-spacing:.6px;text-transform:uppercase;
+  padding:5px 8px;border-radius:999px;color:#75ecff;background:rgba(70,216,242,.12);
+}
+.price-card h3{font:700 22px "Space Grotesk",sans-serif;margin:0 0 10px}
+.price-card-amount{display:flex;align-items:baseline;gap:8px;margin-bottom:18px}
+.price-card-amount strong{font:700 34px "Space Grotesk",sans-serif}
+.price-card-amount span{color:#8fabc0;font-size:13px}
+.price-card ul{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:10px;color:#c3bfd4;font-size:13.5px}
+.price-card li span{color:#70e8dc;margin-right:8px;font-weight:700}
+.centered-print{text-align:center;margin-top:18px}
+
+/* Checkout modal */
+.checkout-backdrop.open{display:flex}
+.checkout-summary{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  padding:14px;border-radius:14px;margin:0 0 18px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(176,158,255,.16);
+}
+.checkout-label{display:block;font-size:10px;color:#8b95b5;margin-bottom:4px;letter-spacing:.4px;text-transform:uppercase}
+.checkout-fields{display:grid;gap:8px;margin-bottom:14px}
+.checkout-fields label{font-size:12px;color:#d2cee2}
+.checkout-fields input{
+  background:#0b0b16;border:1px solid #302b46;border-radius:11px;padding:12px 14px;color:#fff;outline:none;font-size:14px;
+}
+.checkout-fields input:focus{border-color:#9b7bff;box-shadow:0 0 0 3px rgba(155,123,255,.15)}
+.checkout-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
