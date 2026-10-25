@@ -407,8 +407,10 @@ function updateChatUser(user) {
   if (chatEls.userName) chatEls.userName.textContent = user ? name : 'Mi cuenta';
   if (chatEls.avatar) chatEls.avatar.textContent = (user ? name : 'S').charAt(0).toLocaleUpperCase('es');
   if (chatEls.model) {
-    const preferred = safeRead(`santitosia:model:${chatUserId || 'guest'}`) || 'jr';
+    let preferred = safeRead(`santitosia:model:${chatUserId || 'guest'}`) || 'jr';
+    if (preferred === 'pro' && !hasPremiumPlan()) preferred = 'jr';
     chatEls.model.value = preferred === 'pro' ? 'pro' : 'jr';
+    if (preferred !== 'pro') safeSave(`santitosia:model:${chatUserId || 'guest'}`, 'jr');
     updatePlanCard();
   }
   chatSessions = loadChatSessions();
@@ -571,10 +573,15 @@ function updatePlanCard() {
   }
   if (chatEls.modelPickerMark) chatEls.modelPickerMark.textContent = pro ? '✧' : '↯';
   if (chatEls.modelMenu) {
+    const unlocked = hasPremiumPlan();
     chatEls.modelMenu.querySelectorAll('.model-option').forEach((opt) => {
       const active = opt.dataset.model === (pro ? 'pro' : 'jr');
       opt.classList.toggle('active', active);
       opt.setAttribute('aria-selected', String(active));
+      if (opt.dataset.model === 'pro') {
+        opt.classList.toggle('locked', !unlocked);
+        opt.title = unlocked ? '' : 'Requiere plan Premium';
+      }
     });
   }
 }
@@ -586,9 +593,34 @@ function closeModelMenu() {
   if (chatEls.modelPicker) chatEls.modelPicker.classList.remove('open');
 }
 
-function setModelValue(value) {
+
+function planStorageKey() {
+  return `santitosia:plan:${chatUserId || 'guest'}`;
+}
+function hasPremiumPlan() {
+  return safeRead(planStorageKey()) === 'pro';
+}
+function requirePremiumOrCheckout() {
+  if (hasPremiumPlan()) return true;
+  showChatToast('Santitos Premium requiere suscripción. Completa el pago para usarlo.');
+  closeModelMenu();
+  if (typeof openCheckout === 'function') {
+    window.setTimeout(() => openCheckout('pro'), 180);
+  }
+  return false;
+}
+
+function setModelValue(value, options = {}) {
   if (!chatEls.model) return;
   const next = value === 'pro' ? 'pro' : 'jr';
+  const skipPaywall = !!(options && options.skipPaywall);
+  if (next === 'pro' && !skipPaywall && !hasPremiumPlan()) {
+    // Forzar UI en Jr y abrir checkout
+    chatEls.model.value = 'jr';
+    updatePlanCard();
+    requirePremiumOrCheckout();
+    return;
+  }
   if (chatEls.model.value === next) {
     closeModelMenu();
     return;
@@ -596,7 +628,7 @@ function setModelValue(value) {
   chatEls.model.value = next;
   updatePlanCard();
   safeSave(`santitosia:model:${chatUserId || 'guest'}`, next);
-  showChatToast(next === 'pro' ? 'Santitos seleccionado (vista previa).' : 'Santitos Jr seleccionado (vista previa).');
+  showChatToast(next === 'pro' ? 'Santitos Premium activo.' : 'Santitos Jr seleccionado.');
   closeModelMenu();
 }
 function scrollChatToBottom(smooth) {
@@ -1462,6 +1494,13 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeModelMenu();
 });
 chatEls.model?.addEventListener('change', () => {
+  if (chatEls.model.value === 'pro' && !hasPremiumPlan()) {
+    chatEls.model.value = 'jr';
+    updatePlanCard();
+    requirePremiumOrCheckout();
+    return;
+  }
+  safeSave(`santitosia:model:${chatUserId || 'guest'}`, chatEls.model.value === 'pro' ? 'pro' : 'jr');
   updatePlanCard();
 });
 document.getElementById('webSearchBtn')?.addEventListener('click', (event) => {
@@ -1597,9 +1636,9 @@ function loadPayPalSdk() {
 }
 
 function activatePremiumLocally() {
-  if (chatEls.model) setModelValue('pro');
-  safeSave(`santitosia:plan:${chatUserId || 'guest'}`, 'pro');
-  showChatToast('Premium activado. ¡Gracias por tu pago con PayPal!');
+  safeSave(planStorageKey(), 'pro');
+  if (chatEls.model) setModelValue('pro', { skipPaywall: true });
+  showChatToast('Premium activado. ¡Gracias por tu pago!');
 }
 
 function renderPayPalButtons() {
