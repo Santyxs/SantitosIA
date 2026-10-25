@@ -859,7 +859,7 @@ function showPanel(section) {
     logoTitle.innerHTML = '<span class="settings-card-icon">◉</span><span>Tu avatar</span>';
     const logoHint = document.createElement('p');
     logoHint.className = 'settings-hint';
-    logoHint.textContent = 'Esta imagen te representa a ti en el chat y en tu cuenta. No cambia el logo de SantitosIA.';
+    logoHint.textContent = 'Esta imagen te representa a ti en el chat y en tu cuenta.';
     const logoRow = document.createElement('div');
     logoRow.className = 'settings-logo-row';
     const logoPreview = document.createElement('div');
