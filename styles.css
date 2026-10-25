@@ -1092,3 +1092,57 @@ body.chat-mode .chat-app{display:flex}
   object-fit: cover;
   border: 0;
 }
+
+
+/* Atajo en pantalla de bienvenida */
+.shortcut-hint{
+  margin:14px 0 0;
+  color:#7a83a6;
+  font-size:11px;
+  letter-spacing:.2px;
+}
+.shortcut-hint kbd{
+  display:inline-block;
+  padding:2px 6px;
+  margin:0 1px;
+  border:1px solid rgba(150,140,220,.25);
+  border-radius:6px;
+  background:rgba(20,24,48,.7);
+  color:#c5c9e8;
+  font:600 10px "DM Sans",sans-serif;
+}
+
+/* Indicador de escritura */
+.typing-bubble{
+  display:inline-flex !important;
+  align-items:center;
+  gap:5px;
+  min-width:52px;
+  padding:14px 16px !important;
+}
+.typing-bubble span{
+  width:7px;height:7px;border-radius:50%;
+  background:#a99bff;
+  opacity:.45;
+  animation:typingDot 1.2s ease-in-out infinite;
+}
+.typing-bubble span:nth-child(2){animation-delay:.15s}
+.typing-bubble span:nth-child(3){animation-delay:.3s}
+@keyframes typingDot{
+  0%,80%,100%{transform:translateY(0);opacity:.35}
+  40%{transform:translateY(-4px);opacity:1}
+}
+
+/* Aviso de vista previa más discreto */
+.preview-notice{
+  opacity:.92;
+}
+
+/* Pulido móvil: selector de modelos y topbar */
+@media (max-width:560px){
+  .model-picker-trigger{height:34px;gap:5px}
+  .model-name{font-size:11px}
+  .model-badge{font-size:8px}
+  .chat-topbar{height:60px;flex-basis:60px}
+  .chat-context{font-size:11px}
+}
