@@ -1283,3 +1283,29 @@ body.hide-shortcut-hints .shortcut-hint{display:none !important}
 body.chat-compact .chat-message{margin-bottom:4px}
 body.chat-compact .message-bubble{padding:10px 12px}
 body.chat-compact .chat-stage{padding-top:18px}
+
+
+/* Avatar de usuario con foto */
+.chat-avatar.has-photo,
+.message-avatar.has-photo,
+.settings-account-avatar.has-photo,
+.settings-logo-preview{
+  padding:0;
+  overflow:hidden;
+}
+.chat-avatar.has-photo img,
+.message-avatar.has-photo img,
+.settings-account-avatar.has-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+  display:block;
+}
+.settings-logo-preview{position:relative}
+.settings-avatar-placeholder{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font:700 22px "DM Sans",sans-serif;color:#c8c6ff;
+  pointer-events:none;
+}
+.settings-logo-preview img[style*="0.35"] + .settings-avatar-placeholder{opacity:1}
