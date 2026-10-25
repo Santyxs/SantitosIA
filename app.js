@@ -477,10 +477,32 @@ function applyUserAvatarEverywhere() {
       el.textContent = (name || 'S').charAt(0).toLocaleUpperCase('es');
     }
   });
-  // Preview en configuración
-  document.querySelectorAll('.settings-logo-preview img').forEach((img) => {
-    img.src = src || 'assets/logo.png';
-    img.style.opacity = src ? '1' : '0.35';
+  // Preview en configuración (solo foto de usuario, nunca el logo del modelo)
+  document.querySelectorAll('.settings-user-avatar-preview, .settings-logo-preview').forEach((box) => {
+    if (src) {
+      box.classList.add('has-photo');
+      let img = box.querySelector('img');
+      const placeholder = box.querySelector('.settings-avatar-placeholder');
+      if (placeholder) placeholder.remove();
+      if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Tu avatar';
+        box.append(img);
+      }
+      img.src = src;
+    } else {
+      box.classList.remove('has-photo');
+      const img = box.querySelector('img');
+      if (img) img.remove();
+      let placeholder = box.querySelector('.settings-avatar-placeholder');
+      if (!placeholder) {
+        placeholder = document.createElement('span');
+        placeholder.className = 'settings-avatar-placeholder';
+        box.append(placeholder);
+      }
+      const name = (chatEls.userName && chatEls.userName.textContent) || 'S';
+      placeholder.textContent = name.charAt(0).toLocaleUpperCase('es');
+    }
   });
   // Avatar en tarjeta de configuración
   const settingsAvatar = document.querySelector('.settings-account-avatar');
@@ -841,14 +863,15 @@ function showPanel(section) {
     const logoRow = document.createElement('div');
     logoRow.className = 'settings-logo-row';
     const logoPreview = document.createElement('div');
-    logoPreview.className = 'settings-logo-preview';
-    const logoImg = document.createElement('img');
+    logoPreview.className = 'settings-logo-preview settings-user-avatar-preview';
     const customAvatar = getCustomUserAvatar();
-    logoImg.src = customAvatar || 'assets/logo.png';
-    logoImg.alt = 'Tu avatar';
-    logoImg.style.opacity = customAvatar ? '1' : '0.35';
-    logoPreview.append(logoImg);
-    if (!customAvatar) {
+    if (customAvatar) {
+      const logoImg = document.createElement('img');
+      logoImg.src = customAvatar;
+      logoImg.alt = 'Tu avatar';
+      logoPreview.append(logoImg);
+      logoPreview.classList.add('has-photo');
+    } else {
       const placeholder = document.createElement('span');
       placeholder.className = 'settings-avatar-placeholder';
       placeholder.textContent = ((chatEls.userName && chatEls.userName.textContent) || 'S').charAt(0).toLocaleUpperCase('es');
