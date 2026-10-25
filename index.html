@@ -49,6 +49,7 @@
 
     <nav class="nav-links" id="navLinks" aria-label="Navegación principal">
       <a href="#modelos">Modelos</a>
+      <a href="#precios">Precios</a>
       <a href="#funciones">Funciones</a>
       <a href="/SantitosIA/chat" class="nav-chat-link">Ir al chat</a>
       <div class="nav-mobile-actions" id="mobileGuestActions">
@@ -278,10 +279,48 @@
             <li><span>✓</span> Traducción de plugins de Minecraft</li>
           </ul>
           <div class="price-line"><strong>3 $</strong><span>/ mes · precio previsto</span></div>
-          <button class="btn btn-primary full-width" data-open-auth="register">Descubrir Premium <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="btn btn-primary full-width" data-open-checkout="pro">Suscribirse · 3 $/mes <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </article>
       </div>
-      <p class="fine-print">Las funciones y el precio son provisionales hasta conectar los modelos, definir límites de uso y activar los pagos.</p>
+      <p class="fine-print">Puedes revisar el detalle de planes en la sección de precios. El checkout actual es de demostración hasta activar pagos reales.</p>
+    </section>
+
+    <section class="pricing-page section-wrap" id="precios">
+      <div class="section-heading centered">
+        <div class="eyebrow">PLANES SENCILLOS</div>
+        <h2>Precios <span class="gradient-text">claros.</span></h2>
+        <p>Empieza gratis con Santitos Jr. Pasa a Premium cuando necesites más profundidad y herramientas.</p>
+      </div>
+      <div class="pricing-table">
+        <article class="price-card">
+          <div class="price-card-top">
+            <h3>Santitos Jr</h3>
+            <div class="price-card-amount"><strong>0 $</strong><span>/ mes</span></div>
+          </div>
+          <ul>
+            <li><span>✓</span> Chat diario</li>
+            <li><span>✓</span> Respuestas rápidas</li>
+            <li><span>✓</span> Historial en el navegador</li>
+            <li><span>✓</span> Ideal para empezar</li>
+          </ul>
+          <button class="btn btn-outline full-width" data-open-checkout="jr">Empezar gratis</button>
+        </article>
+        <article class="price-card price-card-featured">
+          <div class="price-badge">Recomendado</div>
+          <div class="price-card-top">
+            <h3>Santitos Premium</h3>
+            <div class="price-card-amount"><strong>3 $</strong><span>/ mes</span></div>
+          </div>
+          <ul>
+            <li><span>✓</span> Razonamiento avanzado</li>
+            <li><span>✓</span> Búsqueda web</li>
+            <li><span>✓</span> Archivos e imágenes</li>
+            <li><span>✓</span> Prioridad en nuevas funciones</li>
+          </ul>
+          <button class="btn btn-primary full-width" data-open-checkout="pro">Ir al checkout</button>
+        </article>
+      </div>
+      <p class="fine-print centered-print">Los precios son previstos. El checkout actual simula la suscripción sin cobro real hasta integrar la pasarela de pago.</p>
     </section>
 
     <section class="features-section section-wrap" id="funciones">
@@ -349,6 +388,43 @@
       <p class="auth-switch" id="authSwitch">¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button></p>
       <p class="demo-note" id="demoNote">Registro con correo y contraseña. Plan inicial: gratis.</p>
       <div class="form-message" id="formMessage" role="status"></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop checkout-backdrop" id="checkoutModal" aria-hidden="true">
+    <section class="auth-modal checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+      <button class="modal-close" id="closeCheckout" type="button" aria-label="Cerrar">×</button>
+      <div class="eyebrow">CHECKOUT</div>
+      <h2 id="checkoutTitle">Confirmar plan</h2>
+      <p class="auth-subtitle" id="checkoutNote">Revisa tu selección antes de continuar.</p>
+      <div class="checkout-summary">
+        <div>
+          <span class="checkout-label">Plan</span>
+          <strong id="checkoutPlanName">Santitos Premium</strong>
+        </div>
+        <div>
+          <span class="checkout-label">Precio</span>
+          <strong id="checkoutPlanPrice">3 $ / mes</strong>
+        </div>
+      </div>
+      <div class="checkout-fields">
+        <label for="checkoutEmail">Correo de facturación</label>
+        <input id="checkoutEmail" type="email" placeholder="tu@email.com" autocomplete="email">
+        <label for="checkoutCard">Tarjeta (demo)</label>
+        <input id="checkoutCard" type="text" placeholder="4242 4242 4242 4242" inputmode="numeric" autocomplete="off">
+        <div class="checkout-row">
+          <div>
+            <label for="checkoutExp">Caducidad</label>
+            <input id="checkoutExp" type="text" placeholder="MM/AA" autocomplete="off">
+          </div>
+          <div>
+            <label for="checkoutCvc">CVC</label>
+            <input id="checkoutCvc" type="text" placeholder="123" autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary full-width" type="button" id="checkoutConfirm">Confirmar · demo sin cobro</button>
+      <p class="demo-note">Ningún dato se envía a un procesador de pagos. Es una simulación de interfaz.</p>
     </section>
   </div>
 
