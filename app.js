@@ -488,6 +488,42 @@ function setModelValue(value) {
   showChatToast(next === 'pro' ? 'Santitos seleccionado (vista previa).' : 'Santitos Jr seleccionado (vista previa).');
   closeModelMenu();
 }
+function scrollChatToBottom(smooth) {
+  if (!chatEls.stage) return;
+  const run = () => {
+    chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
+  };
+  run();
+  window.requestAnimationFrame(run);
+  if (smooth) window.setTimeout(run, 60);
+}
+function showTypingIndicator() {
+  if (!chatEls.messages) return null;
+  const row = document.createElement('article');
+  row.className = 'chat-message assistant-message typing-row';
+  row.id = 'typingIndicator';
+  row.setAttribute('aria-label', 'SantitosIA está escribiendo');
+  const avatar = document.createElement('div');
+  avatar.className = 'message-avatar';
+  const image = document.createElement('img');
+  image.src = 'assets/logo.png';
+  image.alt = 'SantitosIA';
+  avatar.append(image);
+  const body = document.createElement('div');
+  body.className = 'message-body';
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble typing-bubble';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+  body.append(bubble);
+  row.append(avatar, body);
+  chatEls.messages.append(row);
+  scrollChatToBottom(true);
+  return row;
+}
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
 function showChatToast(message) {
   if (!chatEls.toast) return;
   chatEls.toast.textContent = message;
@@ -523,7 +559,7 @@ function renderConversation(id) {
   chatEls.messages.replaceChildren();
   if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
   session.messages.forEach((item) => addMessageToDOM(item, false));
-  chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
+  scrollChatToBottom(true);
   renderRecentChats();
 }
 function createMessageNode(item, addActions) {
@@ -579,7 +615,7 @@ function createMessageNode(item, addActions) {
 }
 function addMessageToDOM(item, scroll = true) {
   chatEls.messages.append(createMessageNode(item, true));
-  if (scroll) chatEls.stage.scrollTo({ top: chatEls.stage.scrollHeight, behavior: 'smooth' });
+  if (scroll) scrollChatToBottom(true);
 }
 async function copyText(text) {
   try {
@@ -711,18 +747,25 @@ function sendChatMessage(text) {
   chatEls.messages.replaceChildren(...session.messages.slice(0, -1).map((item) => createMessageNode(item, true)));
   addMessageToDOM(userMessage);
   const hasFiles = attached.length > 0;
+  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
   const assistantMessage = {
     role: 'assistant', timestamp: Date.now() + 1,
-    content: 'La interfaz de conversación está funcionando, pero el modelo de IA todavía no está conectado. Tu mensaje se ha guardado en este navegador y no se ha enviado a ningún servicio de IA.',
-    previewNote: hasFiles ? 'Los nombres de los archivos se han añadido al chat, pero su contenido todavía no se ha enviado ni analizado.' : 'Cuando conectemos el proveedor de IA, aquí aparecerá una respuesta real a tu pregunta.'
+    content: hasFiles
+      ? `He recibido tu mensaje y ${attached.length === 1 ? 'el archivo' : 'los archivos'} en modo vista previa. Cuando ${modelName} esté conectado, podré leer el contenido y responderte con detalle.`
+      : `He guardado tu mensaje en este dispositivo. ${modelName} todavía no está conectado a un modelo de IA, así que esta respuesta es solo de demostración. Pronto verás aquí respuestas reales.`,
+    previewNote: hasFiles
+      ? 'Vista previa: se muestran los nombres de archivo, pero el contenido no se analiza todavía.'
+      : 'Vista previa: tu conversación se guarda en el navegador hasta conectar el modelo.'
   };
   session.messages.push(assistantMessage); session.updatedAt = Date.now();
   selectedAttachments = []; renderAttachmentPreview();
+  showTypingIndicator();
   window.setTimeout(() => {
-    if (activeChatId !== session.id || activeChatSection !== 'chat') return;
+    if (activeChatId !== session.id || activeChatSection !== 'chat') { removeTypingIndicator(); return; }
+    removeTypingIndicator();
     addMessageToDOM(assistantMessage);
-    chatEls.stage.scrollTop = chatEls.stage.scrollHeight;
-  }, 320);
+    scrollChatToBottom(true);
+  }, 700 + Math.min(900, (content || '').length * 8));
   saveChatSessions(); renderRecentChats();
   if (activeChatSection !== 'chat') renderConversation(session.id);
 }
