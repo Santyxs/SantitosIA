@@ -719,16 +719,40 @@ function createMessageNode(item, addActions) {
     const strong = document.createElement('strong'); strong.textContent = 'Modo de vista previa. ';
     note.append(strong, document.createTextNode(item.previewNote)); body.append(note);
   }
-  if (role === 'assistant' && addActions) {
+  if (role === 'assistant') {
     const actions = document.createElement('div'); actions.className = 'message-actions';
     const copy = document.createElement('button'); copy.className = 'message-action'; copy.type = 'button'; copy.textContent = '▢ Copiar';
     copy.addEventListener('click', () => copyText(item.content || ''));
-    actions.append(copy); body.append(actions);
-  } else if (role === 'assistant' && !addActions) {
-    const actions = document.createElement('div'); actions.className = 'message-actions';
-    const copy = document.createElement('button'); copy.className = 'message-action'; copy.type = 'button'; copy.textContent = '▢ Copiar';
-    copy.addEventListener('click', () => copyText(item.content || ''));
-    actions.append(copy); body.append(actions);
+    actions.append(copy);
+    if (addActions) {
+      const regen = document.createElement('button');
+      regen.className = 'message-action';
+      regen.type = 'button';
+      regen.textContent = '↻ Regenerar';
+      regen.addEventListener('click', () => regenerateLastAssistant());
+      actions.append(regen);
+    }
+    body.append(actions);
+  } else if (role === 'user' && addActions) {
+    const session = activeSession();
+    const isLastUser = session && session.messages.length && session.messages.filter((m) => m.role === 'user').pop() === item;
+    // Fallback: compare content+timestamp
+    let lastUser = null;
+    if (session) {
+      for (let i = session.messages.length - 1; i >= 0; i--) {
+        if (session.messages[i].role === 'user') { lastUser = session.messages[i]; break; }
+      }
+    }
+    if (lastUser && lastUser.timestamp === item.timestamp && lastUser.content === item.content) {
+      const actions = document.createElement('div'); actions.className = 'message-actions';
+      const edit = document.createElement('button');
+      edit.className = 'message-action';
+      edit.type = 'button';
+      edit.textContent = '✎ Editar';
+      edit.addEventListener('click', () => editLastUserMessage());
+      actions.append(edit);
+      body.append(actions);
+    }
   }
   if (role === 'user') row.append(body, avatar); else row.append(avatar, body);
   return row;
@@ -779,6 +803,146 @@ function renderAttachmentPreview() {
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 }
+
+function renameSession(id) {
+  const session = chatSessions.find((s) => s.id === id);
+  if (!session) return;
+  const next = window.prompt('Nuevo nombre de la conversación:', session.title || '');
+  if (next === null) return;
+  const title = next.trim().slice(0, 80);
+  if (!title) { showChatToast('El nombre no puede estar vacío.'); return; }
+  session.title = title;
+  session.updatedAt = Date.now();
+  saveChatSessions();
+  renderRecentChats();
+  showChatToast('Conversación renombrada.');
+  if (activeChatSection === 'history') showPanel('history');
+}
+function deleteSession(id) {
+  const session = chatSessions.find((s) => s.id === id);
+  if (!session) return;
+  const ok = window.confirm(`¿Borrar «${session.title}»? Esta acción no se puede deshacer.`);
+  if (!ok) return;
+  chatSessions = chatSessions.filter((s) => s.id !== id);
+  if (activeChatId === id) {
+    activeChatId = chatSessions[0] ? chatSessions[0].id : null;
+  }
+  saveChatSessions();
+  renderRecentChats();
+  showChatToast('Conversación eliminada.');
+  if (activeChatId) renderConversation(activeChatId);
+  else if (activeChatSection === 'history') showPanel('history');
+  else showChatWelcome();
+}
+function exportSession(id, format) {
+  const session = chatSessions.find((s) => s.id === id);
+  if (!session) return;
+  const lines = [];
+  if (format === 'md') {
+    lines.push(`# ${session.title || 'Chat'}`);
+    lines.push('');
+    session.messages.forEach((m) => {
+      const who = m.role === 'user' ? 'Tú' : 'SantitosIA';
+      lines.push(`## ${who}`);
+      lines.push(m.content || '');
+      lines.push('');
+    });
+  } else {
+    lines.push(session.title || 'Chat');
+    lines.push(''.padStart(40, '-'));
+    session.messages.forEach((m) => {
+      const who = m.role === 'user' ? 'Tú' : 'SantitosIA';
+      lines.push(`[${who}] ${m.content || ''}`);
+      lines.push('');
+    });
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${(session.title || 'chat').replace(/[^\w\-áéíóúñü ]+/gi, '').trim() || 'chat'}.${format === 'md' ? 'md' : 'txt'}`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showChatToast(format === 'md' ? 'Chat exportado en Markdown.' : 'Chat exportado en texto.');
+}
+function collectAllAttachments() {
+  const list = [];
+  chatSessions.forEach((session) => {
+    (session.messages || []).forEach((m) => {
+      (m.attachments || []).forEach((file) => {
+        list.push({
+          name: file.name,
+          type: file.type || '',
+          size: file.size || 0,
+          sessionId: session.id,
+          sessionTitle: session.title,
+          timestamp: m.timestamp || session.updatedAt || 0,
+        });
+      });
+    });
+  });
+  return list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+}
+function regenerateLastAssistant() {
+  const session = activeSession();
+  if (!session || !session.messages.length) return;
+  let lastIdx = -1;
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    if (session.messages[i].role === 'assistant') { lastIdx = i; break; }
+  }
+  if (lastIdx < 0) return;
+  const prevUser = [...session.messages].slice(0, lastIdx).reverse().find((m) => m.role === 'user');
+  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
+  session.messages[lastIdx] = {
+    role: 'assistant',
+    timestamp: Date.now(),
+    content: prevUser
+      ? `He vuelto a generar una respuesta de demostración sobre: «${(prevUser.content || '').slice(0, 120)}». Cuando ${modelName} esté conectado, aquí verás una respuesta real.`
+      : `Respuesta regenerada en modo vista previa con ${modelName}.`,
+    previewNote: 'Vista previa: regeneración local, sin modelo de IA conectado.',
+  };
+  session.updatedAt = Date.now();
+  saveChatSessions();
+  renderConversation(session.id);
+  showChatToast('Respuesta regenerada (vista previa).');
+}
+function editLastUserMessage() {
+  const session = activeSession();
+  if (!session || !session.messages.length) return;
+  let lastIdx = -1;
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    if (session.messages[i].role === 'user') { lastIdx = i; break; }
+  }
+  if (lastIdx < 0) return;
+  const current = session.messages[lastIdx].content || '';
+  const next = window.prompt('Editar tu último mensaje:', current);
+  if (next === null) return;
+  const text = next.trim();
+  if (!text) { showChatToast('El mensaje no puede estar vacío.'); return; }
+  session.messages[lastIdx].content = text;
+  // Drop assistant messages after this user message
+  session.messages = session.messages.slice(0, lastIdx + 1);
+  session.updatedAt = Date.now();
+  saveChatSessions();
+  renderConversation(session.id);
+  // Trigger a new preview reply
+  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
+  showTypingIndicator();
+  window.setTimeout(() => {
+    removeTypingIndicator();
+    const assistantMessage = {
+      role: 'assistant',
+      timestamp: Date.now(),
+      content: `He tenido en cuenta tu mensaje editado. ${modelName} sigue en vista previa, así que esta respuesta es de demostración.`,
+      previewNote: 'Vista previa tras editar el mensaje.',
+    };
+    session.messages.push(assistantMessage);
+    session.updatedAt = Date.now();
+    saveChatSessions();
+    addMessageToDOM(assistantMessage);
+    renderRecentChats();
+  }, 600);
+}
+
 function showPanel(section) {
   setActiveNav(section);
   // La pantalla "¿Qué tienes en mente?" solo pertenece al chat vacío; nunca en historial/archivos/configuración
@@ -793,25 +957,96 @@ function showPanel(section) {
   const heading = document.createElement('h2'); const description = document.createElement('p');
   if (section === 'history') {
     kicker.textContent = 'TUS CONVERSACIONES'; heading.textContent = 'Historial';
-    description.textContent = chatSessions.length ? 'Abre una conversación anterior para continuar donde lo dejaste.' : 'Cuando empieces a conversar, tus chats recientes aparecerán aquí.';
-    if (chatSessions.length) {
-      const list = document.createElement('div'); list.className = 'panel-history-list';
-      [...chatSessions].sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)).forEach((session) => {
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'panel-history-item';
+    description.textContent = chatSessions.length ? 'Busca, abre, renombra, exporta o borra tus conversaciones.' : 'Cuando empieces a conversar, tus chats recientes aparecerán aquí.';
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'panel-search';
+    search.placeholder = 'Buscar por título…';
+    search.setAttribute('aria-label', 'Buscar conversaciones');
+    const list = document.createElement('div');
+    list.className = 'panel-history-list';
+    function paintHistory(filter) {
+      list.replaceChildren();
+      const q = (filter || '').trim().toLowerCase();
+      const items = [...chatSessions]
+        .sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .filter((s) => !q || String(s.title || '').toLowerCase().includes(q));
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'settings-hint';
+        empty.textContent = chatSessions.length ? 'Ninguna conversación coincide con la búsqueda.' : 'Aún no hay conversaciones.';
+        list.append(empty);
+        return;
+      }
+      items.forEach((session) => {
+        const row = document.createElement('div');
+        row.className = 'panel-history-item panel-history-row';
+        const main = document.createElement('button');
+        main.type = 'button';
+        main.className = 'panel-history-main';
         const title = document.createElement('strong'); title.textContent = session.title;
-        const meta = document.createElement('small'); meta.textContent = `${session.messages.length} mensajes · ${new Date(session.updatedAt || Date.now()).toLocaleDateString('es-ES')}`;
-        button.append(title, meta); button.addEventListener('click', () => renderConversation(session.id)); list.append(button);
-      }); panel.append(kicker, heading, description, list);
-    } else panel.append(kicker, heading, description);
+        const meta = document.createElement('small');
+        meta.textContent = `${session.messages.length} mensajes · ${new Date(session.updatedAt || Date.now()).toLocaleDateString('es-ES')}`;
+        main.append(title, meta);
+        main.addEventListener('click', () => renderConversation(session.id));
+        const tools = document.createElement('div');
+        tools.className = 'panel-history-tools';
+        const mk = (label, fn) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'panel-tool-btn';
+          b.textContent = label;
+          b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+          return b;
+        };
+        tools.append(
+          mk('Renombrar', () => renameSession(session.id)),
+          mk('Exportar', () => exportSession(session.id, 'md')),
+          mk('Borrar', () => deleteSession(session.id))
+        );
+        row.append(main, tools);
+        list.append(row);
+      });
+    }
+    search.addEventListener('input', () => paintHistory(search.value));
+    if (chatSessions.length) {
+      panel.append(kicker, heading, description, search, list);
+      paintHistory('');
+    } else {
+      panel.append(kicker, heading, description);
+    }
   } else if (section === 'files') {
     kicker.textContent = 'DOCUMENTOS E IMÁGENES'; heading.textContent = 'Tus archivos';
-    description.textContent = 'Puedes adjuntar imágenes o archivos desde el botón del clip junto al cuadro de mensaje. En esta versión de vista previa, los archivos solo se muestran en la conversación; todavía no se procesan con un modelo de IA.';
-    const action = document.createElement('button'); action.type = 'button'; action.className = 'new-chat-button'; action.innerHTML = '<span class="new-chat-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3.2v9.6M3.2 8h9.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Seleccionar archivos'; action.addEventListener('click', () => chatEls.fileInput.click());
-    panel.append(kicker, heading, description, action);
+    description.textContent = 'Archivos que has adjuntado en tus conversaciones de este navegador. En vista previa no se procesan con IA.';
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'new-chat-button';
+    action.innerHTML = '<span class="new-chat-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3.2v9.6M3.2 8h9.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Seleccionar archivos';
+    action.addEventListener('click', () => chatEls.fileInput && chatEls.fileInput.click());
+    const files = collectAllAttachments();
+    const list = document.createElement('div');
+    list.className = 'panel-files-list';
+    if (!files.length) {
+      const empty = document.createElement('p');
+      empty.className = 'settings-hint';
+      empty.textContent = 'Todavía no has adjuntado archivos en ningún chat.';
+      list.append(empty);
+    } else {
+      files.slice(0, 40).forEach((file) => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'panel-file-item';
+        const icon = file.type.startsWith('image/') ? '▧' : '▤';
+        row.innerHTML = `<span class="panel-file-icon">${icon}</span><span class="panel-file-copy"><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(file.sessionTitle || 'Chat')} · ${new Date(file.timestamp || Date.now()).toLocaleDateString('es-ES')}</small></span>`;
+        row.addEventListener('click', () => renderConversation(file.sessionId));
+        list.append(row);
+      });
+    }
+    panel.append(kicker, heading, description, action, list);
   } else if (section === 'settings') {
     kicker.textContent = 'PERSONALIZA TU EXPERIENCIA';
     heading.textContent = 'Configuración';
-    description.textContent = 'Ajusta tu cuenta, el logo de la interfaz y las preferencias guardadas en este navegador.';
+    description.textContent = 'Ajusta tu cuenta, tu avatar y las preferencias guardadas en este navegador.';
 
     const settingsBody = document.createElement('div');
     settingsBody.className = 'settings-body';
@@ -850,6 +1085,50 @@ function showPanel(section) {
     planPill.textContent = (chatEls.model && chatEls.model.value === 'pro') ? 'Premium' : 'Gratis';
     accountRow.append(accountAvatar, accountMeta, planPill);
     accountCard.append(accountTitle, accountRow);
+
+    if (currentAuthUser && currentAuthUser.email) {
+      const emailBlock = document.createElement('div');
+      emailBlock.className = 'settings-email-block';
+      const emailLabel = document.createElement('label');
+      emailLabel.textContent = 'Cambiar correo';
+      emailLabel.setAttribute('for', 'settingsEmailInput');
+      const emailInput = document.createElement('input');
+      emailInput.id = 'settingsEmailInput';
+      emailInput.type = 'email';
+      emailInput.className = 'settings-text-input';
+      emailInput.value = currentAuthUser.email;
+      emailInput.autocomplete = 'email';
+      const emailBtn = document.createElement('button');
+      emailBtn.type = 'button';
+      emailBtn.className = 'settings-secondary-btn';
+      emailBtn.textContent = 'Guardar correo';
+      emailBtn.addEventListener('click', async () => {
+        const next = (emailInput.value || '').trim();
+        if (!next || !next.includes('@')) {
+          showChatToast('Introduce un correo válido.');
+          return;
+        }
+        if (next === currentAuthUser.email) {
+          showChatToast('Es el mismo correo.');
+          return;
+        }
+        emailBtn.disabled = true;
+        emailBtn.textContent = 'Guardando…';
+        try {
+          const { data, error } = await sb.auth.updateUser({ email: next });
+          if (error) throw error;
+          showChatToast('Revisa el correo nuevo para confirmar el cambio.');
+          if (data && data.user) setUser(data.user);
+        } catch (err) {
+          showChatToast((err && err.message) || 'No se pudo cambiar el correo.');
+        } finally {
+          emailBtn.disabled = false;
+          emailBtn.textContent = 'Guardar correo';
+        }
+      });
+      emailBlock.append(emailLabel, emailInput, emailBtn);
+      accountCard.append(emailBlock);
+    }
 
     // Avatar del usuario
     const logoCard = document.createElement('div');
@@ -1286,3 +1565,72 @@ function cleanAuthUrl() {
   const clean = window.location.pathname + window.location.hash.replace(/access_token=[^&]+&?/g, '').replace(/&$/, '');
   window.history.replaceState({}, document.title, clean || window.location.pathname);
 }
+
+// ─── Precios y checkout (vista previa de pagos) ───────────
+function openCheckout(plan) {
+  const modal = document.getElementById('checkoutModal');
+  if (!modal) return;
+  const planName = plan === 'pro' ? 'Santitos Premium' : 'Santitos Jr';
+  const planPrice = plan === 'pro' ? '3 $ / mes' : 'Gratis';
+  const title = document.getElementById('checkoutPlanName');
+  const price = document.getElementById('checkoutPlanPrice');
+  const note = document.getElementById('checkoutNote');
+  if (title) title.textContent = planName;
+  if (price) price.textContent = planPrice;
+  if (note) {
+    note.textContent = plan === 'pro'
+      ? 'Checkout de demostración. Cuando actives pagos (p. ej. Stripe), aquí se completará la suscripción real.'
+      : 'El plan Jr es gratuito. Crea una cuenta para empezar.';
+  }
+  modal.dataset.plan = plan === 'pro' ? 'pro' : 'jr';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+function closeCheckout() {
+  const modal = document.getElementById('checkoutModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  if (!document.getElementById('authModal')?.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+document.addEventListener('click', (e) => {
+  const openBtn = e.target.closest('[data-open-checkout]');
+  if (openBtn) {
+    e.preventDefault();
+    openCheckout(openBtn.dataset.openCheckout || 'pro');
+    return;
+  }
+  if (e.target.id === 'closeCheckout' || e.target.id === 'checkoutModal') {
+    closeCheckout();
+  }
+});
+document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
+  const modal = document.getElementById('checkoutModal');
+  const plan = modal?.dataset.plan || 'pro';
+  if (plan === 'jr') {
+    closeCheckout();
+    if (!currentAuthUser) openAuth('register');
+    else {
+      if (chatEls.model) setModelValue('jr');
+      showChatToast('Plan Jr seleccionado.');
+    }
+    return;
+  }
+  // Premium demo: require login, set model to pro, toast
+  closeCheckout();
+  if (!currentAuthUser) {
+    openAuth('register');
+    showChatToast('Crea una cuenta para continuar con Premium (demo).');
+    return;
+  }
+  if (chatEls.model) setModelValue('pro');
+  safeSave(`santitosia:plan:${chatUserId || 'guest'}`, 'pro');
+  showChatToast('Premium activado en modo demostración (sin cobro real).');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCheckout();
+});
+
