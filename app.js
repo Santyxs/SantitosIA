@@ -1697,7 +1697,7 @@ function openCheckout(plan) {
     return;
   }
 
-  if (fallback) fallback.textContent = 'Continuar con el pago (prueba)';
+  if (fallback) fallback.textContent = 'Continuar con el pago';
   renderPayPalButtons();
 }
 
@@ -1744,7 +1744,7 @@ document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
       return;
     }
     activatePremiumLocally();
-    showChatToast('Premium de prueba (sin PayPal Client ID configurado).');
+    showChatToast('Premium activado.');
     return;
   }
   showChatToast('Usa el botón de PayPal para completar el pago.');
