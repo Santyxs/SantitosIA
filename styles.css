@@ -1401,4 +1401,4 @@ body.chat-compact .chat-stage{padding-top:18px}
 .message-action-icon{flex:0 0 auto;opacity:.9}
 
 .model-option.locked{opacity:.72}
-.model-option.locked .model-option-badge.pro::after{content:' · Pago'; }
+
