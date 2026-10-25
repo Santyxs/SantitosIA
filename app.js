@@ -602,7 +602,7 @@ function hasPremiumPlan() {
 }
 function requirePremiumOrCheckout() {
   if (hasPremiumPlan()) return true;
-  showChatToast('Santitos Premium requiere suscripción. Completa el pago para usarlo.');
+  showChatToast('Santitos Premium requiere suscripción. Completa el pago para usarlo.', { important: true });
   closeModelMenu();
   if (typeof openCheckout === 'function') {
     window.setTimeout(() => openCheckout('pro'), 180);
@@ -667,12 +667,18 @@ function removeTypingIndicator() {
   const el = document.getElementById('typingIndicator');
   if (el) el.remove();
 }
-function showChatToast(message) {
+function showChatToast(message, options = {}) {
   if (!chatEls.toast) return;
+  const important = !!(options && options.important);
   chatEls.toast.textContent = message;
+  chatEls.toast.classList.toggle('chat-toast-important', important);
   chatEls.toast.hidden = false;
   window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => { chatEls.toast.hidden = true; }, 3400);
+  const ms = important ? 5600 : 3400;
+  toastTimer = window.setTimeout(() => {
+    chatEls.toast.hidden = true;
+    chatEls.toast.classList.remove('chat-toast-important');
+  }, ms);
 }
 function setActiveNav(section) {
   activeChatSection = section;
