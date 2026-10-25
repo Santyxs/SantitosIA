@@ -1615,7 +1615,7 @@ function renderPayPalButtons() {
   }
 
   if (fallback) fallback.hidden = true;
-  if (hint) hint.textContent = 'El pago se procesa de forma segura con PayPal. No almacenamos datos de tu tarjeta.';
+  if (hint) hint.textContent = 'El pago se procesa de forma segura. No almacenamos datos de tu tarjeta.';
 
   loadPayPalSdk()
     .then((paypal) => {
@@ -1625,7 +1625,7 @@ function renderPayPalButtons() {
         return;
       }
       paypal.Buttons({
-        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal' },
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay', tagline: false },
         createOrder: (_data, actions) => actions.order.create({
           purchase_units: [{
             description: 'Santitos Premium (1 mes)',
@@ -1680,7 +1680,7 @@ function openCheckout(plan) {
   if (price) price.textContent = planPrice;
   if (note) {
     note.textContent = isPro
-      ? 'Paga de forma segura con tu cuenta PayPal.'
+      ? 'Revisa tu plan y completa el pago de forma segura.'
       : 'El plan Jr es gratuito. Crea una cuenta para empezar.';
   }
   modal.dataset.plan = isPro ? 'pro' : 'jr';
@@ -1697,7 +1697,7 @@ function openCheckout(plan) {
     return;
   }
 
-  if (fallback) fallback.textContent = 'Continuar con PayPal (prueba)';
+  if (fallback) fallback.textContent = 'Continuar con el pago (prueba)';
   renderPayPalButtons();
 }
 
