@@ -1569,7 +1569,7 @@ function cleanAuthUrl() {
 // ─── Precios y checkout con PayPal ───────────────────────
 // Pon aquí tu Client ID de PayPal (Dashboard → Apps & Credentials).
 // Sandbox: usa credenciales de prueba. Live: credenciales de producción.
-const PAYPAL_CLIENT_ID = ''; // ej: 'AXxx...tu_client_id'
+const PAYPAL_CLIENT_ID = 'BAAUy48CAf9uF28_OqlP6OsMGMCvlsESqDcaoYdO1Z3RWHdQ8pIChsRSg0uiem8EQbUMLsu-PeN51dG7kE';
 const PAYPAL_CURRENCY = 'EUR';
 const PAYPAL_PREMIUM_AMOUNT = '3.00';
 
