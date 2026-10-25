@@ -1,0 +1,31 @@
+{
+  "name": "SantitosIA",
+  "short_name": "SantitosIA",
+  "description": "Tu IA, siempre contigo. Asistente para videojuegos, dudas cotidianas y mucho más.",
+  "start_url": "/SantitosIA/",
+  "scope": "/SantitosIA/",
+  "display": "standalone",
+  "background_color": "#07071a",
+  "theme_color": "#07071a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icono-app.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
