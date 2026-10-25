@@ -689,12 +689,146 @@ function showPanel(section) {
     const action = document.createElement('button'); action.type = 'button'; action.className = 'new-chat-button'; action.innerHTML = '<span class="new-chat-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3.2v9.6M3.2 8h9.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Seleccionar archivos'; action.addEventListener('click', () => chatEls.fileInput.click());
     panel.append(kicker, heading, description, action);
   } else if (section === 'settings') {
-    kicker.textContent = 'PERSONALIZA TU EXPERIENCIA'; heading.textContent = 'Configuración';
-    description.textContent = 'Elige qué experiencia quieres probar. La selección se guarda en este navegador para tu cuenta.';
-    const label = document.createElement('label'); label.textContent = 'Modelo de conversación'; label.style.cssText = 'display:block;font-size:12px;color:#b6bfdb;margin:18px 0 8px';
-    const select = document.createElement('select'); select.className = 'settings-model-select'; select.innerHTML = '<option value="jr">Santitos Jr · Gratis</option><option value="pro">Santitos · Premium</option>'; select.value = chatEls.model.value;
-    select.addEventListener('change', () => { chatEls.model.value = select.value; updatePlanCard(); safeSave(`santitosia:model:${chatUserId || 'guest'}`, select.value); showChatToast('Modelo seleccionado para esta vista previa.'); });
-    panel.append(kicker, heading, description, label, select);
+    kicker.textContent = 'PERSONALIZA TU EXPERIENCIA';
+    heading.textContent = 'Configuración';
+    description.textContent = 'Ajusta el modelo, las preferencias de esta cuenta y el almacenamiento local. Los cambios se guardan en este navegador.';
+
+    const settingsBody = document.createElement('div');
+    settingsBody.className = 'settings-body';
+
+    // Account card
+    const accountCard = document.createElement('div');
+    accountCard.className = 'settings-card';
+    const accountTitle = document.createElement('div');
+    accountTitle.className = 'settings-card-title';
+    accountTitle.innerHTML = '<span class="settings-card-icon">◉</span><span>Cuenta</span>';
+    const accountRow = document.createElement('div');
+    accountRow.className = 'settings-account-row';
+    const accountAvatar = document.createElement('div');
+    accountAvatar.className = 'settings-account-avatar';
+    accountAvatar.textContent = (chatEls.avatar && chatEls.avatar.textContent) || 'S';
+    const accountMeta = document.createElement('div');
+    accountMeta.className = 'settings-account-meta';
+    const accountName = document.createElement('strong');
+    accountName.textContent = (chatEls.userName && chatEls.userName.textContent) || 'Mi cuenta';
+    const accountDetail = document.createElement('span');
+    accountDetail.textContent = currentAuthUser && currentAuthUser.email
+      ? currentAuthUser.email
+      : 'Sesión local en este navegador';
+    accountMeta.append(accountName, accountDetail);
+    const planPill = document.createElement('span');
+    planPill.className = 'settings-plan-pill';
+    const isPro = chatEls.model && chatEls.model.value === 'pro';
+    planPill.textContent = isPro ? 'Premium' : 'Gratis';
+    planPill.classList.toggle('pro', isPro);
+    accountRow.append(accountAvatar, accountMeta, planPill);
+    accountCard.append(accountTitle, accountRow);
+
+    // Model cards
+    const modelCard = document.createElement('div');
+    modelCard.className = 'settings-card';
+    const modelTitle = document.createElement('div');
+    modelTitle.className = 'settings-card-title';
+    modelTitle.innerHTML = '<span class="settings-card-icon">✧</span><span>Modelo de conversación</span>';
+    const modelHint = document.createElement('p');
+    modelHint.className = 'settings-hint';
+    modelHint.textContent = 'El modelo activo también se puede cambiar desde la barra superior del chat.';
+    const modelGrid = document.createElement('div');
+    modelGrid.className = 'settings-model-grid';
+
+    function makeModelOption(value, name, detail, badge, badgeClass) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'settings-model-option' + ((chatEls.model && chatEls.model.value === value) ? ' active' : '');
+      btn.dataset.model = value;
+      btn.innerHTML = `<span class="settings-model-top"><strong>${name}</strong><span class="settings-model-badge ${badgeClass}">${badge}</span></span><small>${detail}</small>`;
+      btn.addEventListener('click', () => {
+        setModelValue(value);
+        modelGrid.querySelectorAll('.settings-model-option').forEach((el) => {
+          el.classList.toggle('active', el.dataset.model === value);
+        });
+        planPill.textContent = value === 'pro' ? 'Premium' : 'Gratis';
+        planPill.classList.toggle('pro', value === 'pro');
+      });
+      return btn;
+    }
+    modelGrid.append(
+      makeModelOption('jr', 'Santitos Jr', 'Rápido, cercano y gratuito. Ideal para el día a día.', 'Gratis', 'free'),
+      makeModelOption('pro', 'Santitos', 'Más profundidad, búsqueda web y análisis de archivos.', 'Premium', 'pro')
+    );
+    modelCard.append(modelTitle, modelHint, modelGrid);
+
+    // Preferences
+    const prefsCard = document.createElement('div');
+    prefsCard.className = 'settings-card';
+    const prefsTitle = document.createElement('div');
+    prefsTitle.className = 'settings-card-title';
+    prefsTitle.innerHTML = '<span class="settings-card-icon">⚙</span><span>Preferencias</span>';
+
+    const webRow = document.createElement('div');
+    webRow.className = 'settings-toggle-row';
+    const webCopy = document.createElement('div');
+    webCopy.className = 'settings-toggle-copy';
+    webCopy.innerHTML = '<strong>Búsqueda web</strong><span>Marca la herramienta de búsqueda en la barra del chat (vista previa).</span>';
+    const webToggle = document.createElement('button');
+    webToggle.type = 'button';
+    webToggle.className = 'settings-toggle' + (webSearchEnabled ? ' on' : '');
+    webToggle.setAttribute('role', 'switch');
+    webToggle.setAttribute('aria-checked', String(!!webSearchEnabled));
+    webToggle.innerHTML = '<span class="settings-toggle-knob"></span>';
+    webToggle.addEventListener('click', () => {
+      webSearchEnabled = !webSearchEnabled;
+      webToggle.classList.toggle('on', webSearchEnabled);
+      webToggle.setAttribute('aria-checked', String(webSearchEnabled));
+      const btn = document.getElementById('webSearchBtn');
+      if (btn) btn.setAttribute('aria-pressed', String(webSearchEnabled));
+      showChatToast(webSearchEnabled ? 'Búsqueda web activada (vista previa).' : 'Búsqueda web desactivada.');
+    });
+    webRow.append(webCopy, webToggle);
+    prefsCard.append(prefsTitle, webRow);
+
+    // Data / storage
+    const dataCard = document.createElement('div');
+    dataCard.className = 'settings-card';
+    const dataTitle = document.createElement('div');
+    dataTitle.className = 'settings-card-title';
+    dataTitle.innerHTML = '<span class="settings-card-icon">▤</span><span>Datos en este dispositivo</span>';
+    const dataHint = document.createElement('p');
+    dataHint.className = 'settings-hint';
+    const chatCount = chatSessions.length;
+    dataHint.textContent = chatCount
+      ? `Tienes ${chatCount} conversación${chatCount === 1 ? '' : 'es'} guardada${chatCount === 1 ? '' : 's'} en este navegador.`
+      : 'Todavía no hay conversaciones guardadas en este navegador.';
+    const dataActions = document.createElement('div');
+    dataActions.className = 'settings-actions';
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'settings-danger-btn';
+    clearBtn.textContent = 'Borrar historial local';
+    clearBtn.addEventListener('click', () => {
+      if (!chatSessions.length) {
+        showChatToast('No hay historial que borrar.');
+        return;
+      }
+      const ok = window.confirm('¿Borrar todas las conversaciones guardadas en este navegador? Esta acción no se puede deshacer.');
+      if (!ok) return;
+      chatSessions = [];
+      activeChatId = null;
+      saveChatSessions();
+      renderRecentChats();
+      showChatToast('Historial local eliminado.');
+      showPanel('settings');
+    });
+    dataActions.append(clearBtn);
+    dataCard.append(dataTitle, dataHint, dataActions);
+
+    // About
+    const aboutCard = document.createElement('div');
+    aboutCard.className = 'settings-card settings-about';
+    aboutCard.innerHTML = '<div class="settings-card-title"><span class="settings-card-icon">?</span><span>Acerca de SantitosIA</span></div><p class="settings-hint">Versión de vista previa. La autenticación funciona con Supabase; el modelo de IA todavía no está conectado. Tus chats se guardan solo en este navegador.</p>';
+
+    settingsBody.append(accountCard, modelCard, prefsCard, dataCard, aboutCard);
+    panel.append(kicker, heading, description, settingsBody);
   }
   chatEls.messages.append(panel);
   chatEls.stage.scrollTop = 0;
