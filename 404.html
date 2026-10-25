@@ -278,11 +278,11 @@
             <li><span>✓</span> Subida y análisis de archivos e imágenes</li>
             <li><span>✓</span> Traducción de plugins de Minecraft</li>
           </ul>
-          <div class="price-line"><strong>3 $</strong><span>/ mes · precio previsto</span></div>
-          <button class="btn btn-primary full-width" data-open-checkout="pro">Suscribirse · 3 $/mes <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="price-line"><strong>3 €</strong><span>/ mes · precio previsto</span></div>
+          <button class="btn btn-primary full-width" data-open-checkout="pro">Suscribirse · 3 €/mes <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </article>
       </div>
-      <p class="fine-print">Puedes revisar el detalle de planes en la sección de precios. El checkout actual es de demostración hasta activar pagos reales.</p>
+      <p class="fine-print">Puedes revisar el detalle de planes en la sección de precios. Premium se paga con PayPal.</p>
     </section>
 
     <section class="pricing-page section-wrap" id="precios">
@@ -309,7 +309,7 @@
           <div class="price-badge">Recomendado</div>
           <div class="price-card-top">
             <h3>Santitos Premium</h3>
-            <div class="price-card-amount"><strong>3 $</strong><span>/ mes</span></div>
+            <div class="price-card-amount"><strong>3 €</strong><span>/ mes</span></div>
           </div>
           <ul>
             <li><span>✓</span> Razonamiento avanzado</li>
@@ -320,7 +320,7 @@
           <button class="btn btn-primary full-width" data-open-checkout="pro">Ir al checkout</button>
         </article>
       </div>
-      <p class="fine-print centered-print">Los precios son previstos. El checkout actual simula la suscripción sin cobro real hasta integrar la pasarela de pago.</p>
+      <p class="fine-print centered-print">Los precios son previstos. El pago de Premium se realiza con PayPal.</p>
     </section>
 
     <section class="features-section section-wrap" id="funciones">
@@ -394,9 +394,9 @@
   <div class="modal-backdrop checkout-backdrop" id="checkoutModal" aria-hidden="true">
     <section class="auth-modal checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
       <button class="modal-close" id="closeCheckout" type="button" aria-label="Cerrar">×</button>
-      <div class="eyebrow">CHECKOUT</div>
+      <div class="eyebrow">PAGO CON PAYPAL</div>
       <h2 id="checkoutTitle">Confirmar plan</h2>
-      <p class="auth-subtitle" id="checkoutNote">Revisa tu selección antes de continuar.</p>
+      <p class="auth-subtitle" id="checkoutNote">Paga de forma segura con tu cuenta PayPal.</p>
       <div class="checkout-summary">
         <div>
           <span class="checkout-label">Plan</span>
@@ -404,27 +404,15 @@
         </div>
         <div>
           <span class="checkout-label">Precio</span>
-          <strong id="checkoutPlanPrice">3 $ / mes</strong>
+          <strong id="checkoutPlanPrice">3 € / mes</strong>
         </div>
       </div>
-      <div class="checkout-fields">
-        <label for="checkoutEmail">Correo de facturación</label>
-        <input id="checkoutEmail" type="email" placeholder="tu@email.com" autocomplete="email">
-        <label for="checkoutCard">Tarjeta (demo)</label>
-        <input id="checkoutCard" type="text" placeholder="4242 4242 4242 4242" inputmode="numeric" autocomplete="off">
-        <div class="checkout-row">
-          <div>
-            <label for="checkoutExp">Caducidad</label>
-            <input id="checkoutExp" type="text" placeholder="MM/AA" autocomplete="off">
-          </div>
-          <div>
-            <label for="checkoutCvc">CVC</label>
-            <input id="checkoutCvc" type="text" placeholder="123" autocomplete="off">
-          </div>
-        </div>
+      <div class="checkout-paypal-brand" aria-hidden="true">
+        <span class="paypal-mark">Pay<span>Pal</span></span>
       </div>
-      <button class="btn btn-primary full-width" type="button" id="checkoutConfirm">Confirmar · demo sin cobro</button>
-      <p class="demo-note">Ningún dato se envía a un procesador de pagos. Es una simulación de interfaz.</p>
+      <div id="paypalButtons" class="paypal-buttons-host"></div>
+      <button class="btn btn-primary full-width paypal-fallback-btn" type="button" id="checkoutConfirm" hidden>Continuar con PayPal</button>
+      <p class="demo-note" id="checkoutPayPalHint">El pago se procesa con PayPal. No almacenamos datos de tu tarjeta.</p>
     </section>
   </div>
 
