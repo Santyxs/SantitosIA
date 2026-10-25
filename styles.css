@@ -1242,3 +1242,44 @@ body.chat-mode .chat-app{display:flex}
 .settings-danger-btn:hover{background:rgba(255,80,100,.14);border-color:rgba(255,120,140,.45)}
 .settings-about{opacity:.95}
 .chat-panel-view{width:min(720px,100%)}
+
+
+/* Logo personalizado en configuración */
+.settings-logo-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.settings-logo-preview{
+  width:72px;height:72px;flex:0 0 72px;border-radius:50%;
+  overflow:hidden;display:grid;place-items:center;
+  border:1px solid rgba(140,120,255,.28);
+  background:rgba(20,24,48,.8);
+  box-shadow:0 0 18px rgba(100,80,255,.15);
+}
+.settings-logo-preview img{width:100%;height:100%;object-fit:cover}
+.settings-logo-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.settings-secondary-btn{
+  border:1px solid rgba(145,132,255,.35);
+  background:rgba(110,90,220,.16);
+  color:#e8e6ff;
+  border-radius:10px;
+  padding:10px 14px;
+  font:600 12px "DM Sans",sans-serif;
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.settings-secondary-btn:hover{background:rgba(110,90,220,.26);border-color:rgba(145,132,255,.5)}
+.settings-ghost-btn{
+  border:1px solid rgba(130,146,222,.2);
+  background:transparent;
+  color:#aeb6d4;
+  border-radius:10px;
+  padding:10px 14px;
+  font:600 12px "DM Sans",sans-serif;
+  cursor:pointer;
+}
+.settings-ghost-btn:hover{background:rgba(255,255,255,.04);color:#e8e9ff}
+.settings-toggle-row + .settings-toggle-row{margin-top:14px;padding-top:14px;border-top:1px solid rgba(130,146,222,.1)}
+
+/* Preferencias de UI */
+body.hide-shortcut-hints .shortcut-hint{display:none !important}
+body.chat-compact .chat-message{margin-bottom:4px}
+body.chat-compact .message-bubble{padding:10px 12px}
+body.chat-compact .chat-stage{padding-top:18px}
