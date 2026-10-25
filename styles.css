@@ -1394,3 +1394,5 @@ body.chat-compact .chat-stage{padding-top:18px}
 .paypal-buttons-host{min-height:0;margin-bottom:12px}
 .paypal-buttons-host:empty{display:none}
 .paypal-fallback-btn{background:linear-gradient(105deg,#003087,#009cde)!important;box-shadow:0 8px 24px rgba(0,80,180,.28)}
+
+.section-heading .section-subline{margin-top:6px}
