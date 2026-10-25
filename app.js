@@ -425,30 +425,91 @@ function safeRead(key) {
   try { return window.localStorage.getItem(key); } catch (_) { return null; }
 }
 
-const DEFAULT_LOGO_SRC = 'assets/logo.png';
-function logoStorageKey() {
-  return `santitosia:custom-logo:${chatUserId || 'guest'}`;
+const DEFAULT_USER_AVATAR = null; // sin imagen = inicial del nombre
+function userAvatarStorageKey() {
+  return `santitosia:user-avatar:${chatUserId || 'guest'}`;
 }
-function getActiveLogoSrc() {
-  return safeRead(logoStorageKey()) || DEFAULT_LOGO_SRC;
+function getCustomUserAvatar() {
+  return safeRead(userAvatarStorageKey()) || null;
 }
-function clearCustomLogo() {
-  try { window.localStorage.removeItem(logoStorageKey()); } catch (_) {}
+function clearCustomUserAvatar() {
+  try { window.localStorage.removeItem(userAvatarStorageKey()); } catch (_) {}
 }
-function applyCustomLogoEverywhere() {
-  const src = getActiveLogoSrc();
-  document.querySelectorAll(
-    '.brand-mark img, .chat-brand-wolf, .welcome-mark-wrap img, .wolf-emblem img, .auth-logo img, .message-avatar img, .settings-logo-preview img'
-  ).forEach((img) => {
-    if (img && img.tagName === 'IMG') img.src = src;
+function applyUserAvatarEverywhere() {
+  const src = getCustomUserAvatar();
+  // Avatar del sidebar del chat
+  if (chatEls.avatar) {
+    if (src) {
+      chatEls.avatar.textContent = '';
+      let img = chatEls.avatar.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Tu avatar';
+        chatEls.avatar.append(img);
+      }
+      img.src = src;
+      chatEls.avatar.classList.add('has-photo');
+    } else {
+      chatEls.avatar.classList.remove('has-photo');
+      const img = chatEls.avatar.querySelector('img');
+      if (img) img.remove();
+      const name = (chatEls.userName && chatEls.userName.textContent) || 'S';
+      chatEls.avatar.textContent = name.charAt(0).toLocaleUpperCase('es');
+    }
+  }
+  // Avatares de mensajes del usuario
+  document.querySelectorAll('.user-message .message-avatar').forEach((el) => {
+    if (src) {
+      el.textContent = '';
+      let img = el.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Tú';
+        el.append(img);
+      }
+      img.src = src;
+      el.classList.add('has-photo');
+    } else {
+      el.classList.remove('has-photo');
+      const img = el.querySelector('img');
+      if (img) img.remove();
+      const name = (chatEls.avatar && chatEls.avatar.textContent) || 'S';
+      el.textContent = (name || 'S').charAt(0).toLocaleUpperCase('es');
+    }
   });
+  // Preview en configuración
+  document.querySelectorAll('.settings-logo-preview img').forEach((img) => {
+    img.src = src || 'assets/logo.png';
+    img.style.opacity = src ? '1' : '0.35';
+  });
+  // Avatar en tarjeta de configuración
+  const settingsAvatar = document.querySelector('.settings-account-avatar');
+  if (settingsAvatar) {
+    if (src) {
+      settingsAvatar.textContent = '';
+      let img = settingsAvatar.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Tu avatar';
+        settingsAvatar.append(img);
+      }
+      img.src = src;
+      settingsAvatar.classList.add('has-photo');
+    } else {
+      settingsAvatar.classList.remove('has-photo');
+      const img = settingsAvatar.querySelector('img');
+      if (img) img.remove();
+      const name = (chatEls.userName && chatEls.userName.textContent) || 'S';
+      settingsAvatar.textContent = name.charAt(0).toLocaleUpperCase('es');
+    }
+  }
 }
 function applyUiPreferences() {
   const compact = safeRead(`santitosia:compact:${chatUserId || 'guest'}`) === '1';
   const hints = safeRead(`santitosia:hints:${chatUserId || 'guest'}`) !== '0';
   document.body.classList.toggle('chat-compact', compact);
   document.body.classList.toggle('hide-shortcut-hints', !hints);
-  applyCustomLogoEverywhere();
+  applyUserAvatarEverywhere();
 }
 
 function loadChatSessions() {
@@ -534,7 +595,7 @@ function showTypingIndicator() {
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
   const image = document.createElement('img');
-  image.src = getActiveLogoSrc();
+  image.src = 'assets/logo.png';
   image.alt = 'SantitosIA';
   avatar.append(image);
   const body = document.createElement('div');
@@ -598,9 +659,18 @@ function createMessageNode(item, addActions) {
   avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
   if (role === 'assistant') {
     const image = document.createElement('img');
-    image.src = getActiveLogoSrc(); image.alt = 'SantitosIA'; avatar.append(image);
+    image.src = 'assets/logo.png'; image.alt = 'SantitosIA'; avatar.append(image);
   } else {
-    avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
+    const custom = getCustomUserAvatar();
+    if (custom) {
+      const uimg = document.createElement('img');
+      uimg.src = custom;
+      uimg.alt = 'Tú';
+      avatar.append(uimg);
+      avatar.classList.add('has-photo');
+    } else {
+      avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
+    }
   }
   const body = document.createElement('div'); body.className = 'message-body';
   const meta = document.createElement('div'); meta.className = 'message-meta';
@@ -734,7 +804,16 @@ function showPanel(section) {
     accountRow.className = 'settings-account-row';
     const accountAvatar = document.createElement('div');
     accountAvatar.className = 'settings-account-avatar';
-    accountAvatar.textContent = (chatEls.avatar && chatEls.avatar.textContent) || 'S';
+    const existingAvatar = getCustomUserAvatar();
+    if (existingAvatar) {
+      const aimg = document.createElement('img');
+      aimg.src = existingAvatar;
+      aimg.alt = 'Tu avatar';
+      accountAvatar.append(aimg);
+      accountAvatar.classList.add('has-photo');
+    } else {
+      accountAvatar.textContent = ((chatEls.userName && chatEls.userName.textContent) || 'S').charAt(0).toLocaleUpperCase('es');
+    }
     const accountMeta = document.createElement('div');
     accountMeta.className = 'settings-account-meta';
     const accountName = document.createElement('strong');
@@ -750,43 +829,51 @@ function showPanel(section) {
     accountRow.append(accountAvatar, accountMeta, planPill);
     accountCard.append(accountTitle, accountRow);
 
-    // Logo card
+    // Avatar del usuario
     const logoCard = document.createElement('div');
     logoCard.className = 'settings-card';
     const logoTitle = document.createElement('div');
     logoTitle.className = 'settings-card-title';
-    logoTitle.innerHTML = '<span class="settings-card-icon">◈</span><span>Logo de la interfaz</span>';
+    logoTitle.innerHTML = '<span class="settings-card-icon">◉</span><span>Tu avatar</span>';
     const logoHint = document.createElement('p');
     logoHint.className = 'settings-hint';
-    logoHint.textContent = 'Cambia el logo que se muestra en el chat, la cabecera y los mensajes. Se guarda solo en este navegador.';
+    logoHint.textContent = 'Esta imagen te representa a ti en el chat y en tu cuenta. No cambia el logo de SantitosIA.';
     const logoRow = document.createElement('div');
     logoRow.className = 'settings-logo-row';
     const logoPreview = document.createElement('div');
     logoPreview.className = 'settings-logo-preview';
     const logoImg = document.createElement('img');
-    logoImg.src = getActiveLogoSrc();
-    logoImg.alt = 'Logo actual';
+    const customAvatar = getCustomUserAvatar();
+    logoImg.src = customAvatar || 'assets/logo.png';
+    logoImg.alt = 'Tu avatar';
+    logoImg.style.opacity = customAvatar ? '1' : '0.35';
     logoPreview.append(logoImg);
+    if (!customAvatar) {
+      const placeholder = document.createElement('span');
+      placeholder.className = 'settings-avatar-placeholder';
+      placeholder.textContent = ((chatEls.userName && chatEls.userName.textContent) || 'S').charAt(0).toLocaleUpperCase('es');
+      logoPreview.append(placeholder);
+    }
     const logoActions = document.createElement('div');
     logoActions.className = 'settings-logo-actions';
     const logoFile = document.createElement('input');
     logoFile.type = 'file';
-    logoFile.accept = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif';
+    logoFile.accept = 'image/png,image/jpeg,image/webp,image/gif';
     logoFile.hidden = true;
     const uploadBtn = document.createElement('button');
     uploadBtn.type = 'button';
     uploadBtn.className = 'settings-secondary-btn';
-    uploadBtn.textContent = 'Subir imagen';
+    uploadBtn.textContent = 'Subir foto';
     uploadBtn.addEventListener('click', () => logoFile.click());
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'settings-ghost-btn';
-    resetBtn.textContent = 'Restaurar logo';
+    resetBtn.textContent = 'Quitar foto';
     resetBtn.addEventListener('click', () => {
-      clearCustomLogo();
-      logoImg.src = DEFAULT_LOGO_SRC;
-      applyCustomLogoEverywhere();
-      showChatToast('Logo restaurado.');
+      clearCustomUserAvatar();
+      applyUserAvatarEverywhere();
+      showChatToast('Avatar restablecido.');
+      showPanel('settings');
     });
     logoFile.addEventListener('change', () => {
       const file = logoFile.files && logoFile.files[0];
@@ -803,10 +890,10 @@ function showPanel(section) {
           showChatToast('No se pudo leer la imagen.');
           return;
         }
-        safeSave(logoStorageKey(), dataUrl);
-        logoImg.src = dataUrl;
-        applyCustomLogoEverywhere();
-        showChatToast('Logo actualizado en este navegador.');
+        safeSave(userAvatarStorageKey(), dataUrl);
+        applyUserAvatarEverywhere();
+        showChatToast('Avatar actualizado.');
+        showPanel('settings');
       };
       reader.onerror = () => showChatToast('No se pudo cargar la imagen.');
       reader.readAsDataURL(file);
@@ -923,6 +1010,7 @@ function showPanel(section) {
 
     settingsBody.append(accountCard, logoCard, prefsCard, dataCard);
     panel.append(kicker, heading, description, settingsBody);
+    applyUserAvatarEverywhere();
   }
   chatEls.messages.append(panel);
   chatEls.stage.scrollTop = 0;
