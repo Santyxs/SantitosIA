@@ -721,14 +721,19 @@ function createMessageNode(item, addActions) {
   }
   if (role === 'assistant') {
     const actions = document.createElement('div'); actions.className = 'message-actions';
-    const copy = document.createElement('button'); copy.className = 'message-action'; copy.type = 'button'; copy.textContent = '▢ Copiar';
+    const copy = document.createElement('button');
+    copy.className = 'message-action';
+    copy.type = 'button';
+    copy.setAttribute('aria-label', 'Copiar');
+    copy.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Copiar</span>';
     copy.addEventListener('click', () => copyText(item.content || ''));
     actions.append(copy);
     if (addActions) {
       const regen = document.createElement('button');
       regen.className = 'message-action';
       regen.type = 'button';
-      regen.textContent = '↻ Regenerar';
+      regen.setAttribute('aria-label', 'Reintentar');
+      regen.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 0 1 8.2-3.3M12.8 8a4.8 4.8 0 0 1-8.2 3.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.2 2.8v2.6H8.6M4.8 13.2v-2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reintentar</span>';
       regen.addEventListener('click', () => regenerateLastAssistant());
       actions.append(regen);
     }
@@ -903,7 +908,7 @@ function regenerateLastAssistant() {
   session.updatedAt = Date.now();
   saveChatSessions();
   renderConversation(session.id);
-  showChatToast('Respuesta regenerada (vista previa).');
+  showChatToast('Respuesta reintentada (vista previa).');
 }
 function editLastUserMessage() {
   const session = activeSession();
