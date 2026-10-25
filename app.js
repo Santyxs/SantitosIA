@@ -1566,27 +1566,141 @@ function cleanAuthUrl() {
   window.history.replaceState({}, document.title, clean || window.location.pathname);
 }
 
-// ─── Precios y checkout (vista previa de pagos) ───────────
+// ─── Precios y checkout con PayPal ───────────────────────
+// Pon aquí tu Client ID de PayPal (Dashboard → Apps & Credentials).
+// Sandbox: usa credenciales de prueba. Live: credenciales de producción.
+const PAYPAL_CLIENT_ID = ''; // ej: 'AXxx...tu_client_id'
+const PAYPAL_CURRENCY = 'EUR';
+const PAYPAL_PREMIUM_AMOUNT = '3.00';
+
+let paypalSdkLoading = null;
+let paypalButtonsRendered = false;
+
+function loadPayPalSdk() {
+  if (!PAYPAL_CLIENT_ID) return Promise.resolve(null);
+  if (window.paypal) return Promise.resolve(window.paypal);
+  if (paypalSdkLoading) return paypalSdkLoading;
+  paypalSdkLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(PAYPAL_CLIENT_ID)}&currency=${PAYPAL_CURRENCY}&intent=capture&components=buttons`;
+    script.async = true;
+    script.onload = () => resolve(window.paypal || null);
+    script.onerror = () => reject(new Error('No se pudo cargar PayPal'));
+    document.head.appendChild(script);
+  });
+  return paypalSdkLoading;
+}
+
+function activatePremiumLocally() {
+  if (chatEls.model) setModelValue('pro');
+  safeSave(`santitosia:plan:${chatUserId || 'guest'}`, 'pro');
+  showChatToast('Premium activado. ¡Gracias por tu pago con PayPal!');
+}
+
+function renderPayPalButtons() {
+  const host = document.getElementById('paypalButtons');
+  const fallback = document.getElementById('checkoutConfirm');
+  const hint = document.getElementById('checkoutPayPalHint');
+  if (!host) return;
+
+  host.innerHTML = '';
+  paypalButtonsRendered = false;
+
+  if (!PAYPAL_CLIENT_ID) {
+    if (fallback) fallback.hidden = false;
+    if (hint) {
+      hint.textContent = 'Añade tu PAYPAL_CLIENT_ID en app.js para activar el botón oficial de PayPal. Mientras tanto puedes usar el botón de prueba.';
+    }
+    return;
+  }
+
+  if (fallback) fallback.hidden = true;
+  if (hint) hint.textContent = 'El pago se procesa de forma segura con PayPal. No almacenamos datos de tu tarjeta.';
+
+  loadPayPalSdk()
+    .then((paypal) => {
+      if (!paypal || !paypal.Buttons) {
+        if (fallback) fallback.hidden = false;
+        showChatToast('PayPal no está disponible ahora mismo.');
+        return;
+      }
+      paypal.Buttons({
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal' },
+        createOrder: (_data, actions) => actions.order.create({
+          purchase_units: [{
+            description: 'Santitos Premium (1 mes)',
+            amount: { currency_code: PAYPAL_CURRENCY, value: PAYPAL_PREMIUM_AMOUNT },
+          }],
+        }),
+        onApprove: async (_data, actions) => {
+          try {
+            const details = await actions.order.capture();
+            closeCheckout();
+            if (!currentAuthUser) {
+              openAuth('register');
+              showChatToast('Pago recibido. Crea o inicia sesión para vincular Premium a tu cuenta.');
+              safeSave('santitosia:plan:guest', 'pro');
+              return;
+            }
+            activatePremiumLocally();
+            console.info('PayPal order', details && details.id);
+          } catch (err) {
+            console.error(err);
+            showChatToast('El pago se autorizó pero hubo un problema al confirmarlo.');
+          }
+        },
+        onCancel: () => showChatToast('Pago cancelado.'),
+        onError: (err) => {
+          console.error(err);
+          showChatToast('Error con PayPal. Inténtalo de nuevo.');
+        },
+      }).render(host);
+      paypalButtonsRendered = true;
+    })
+    .catch((err) => {
+      console.error(err);
+      if (fallback) fallback.hidden = false;
+      showChatToast('No se pudo cargar PayPal.');
+    });
+}
+
 function openCheckout(plan) {
   const modal = document.getElementById('checkoutModal');
   if (!modal) return;
-  const planName = plan === 'pro' ? 'Santitos Premium' : 'Santitos Jr';
-  const planPrice = plan === 'pro' ? '3 $ / mes' : 'Gratis';
+  const isPro = plan === 'pro';
+  const planName = isPro ? 'Santitos Premium' : 'Santitos Jr';
+  const planPrice = isPro ? '3 € / mes' : 'Gratis';
   const title = document.getElementById('checkoutPlanName');
   const price = document.getElementById('checkoutPlanPrice');
   const note = document.getElementById('checkoutNote');
+  const host = document.getElementById('paypalButtons');
+  const fallback = document.getElementById('checkoutConfirm');
+
   if (title) title.textContent = planName;
   if (price) price.textContent = planPrice;
   if (note) {
-    note.textContent = plan === 'pro'
-      ? 'Checkout de demostración. Cuando actives pagos (p. ej. Stripe), aquí se completará la suscripción real.'
+    note.textContent = isPro
+      ? 'Paga de forma segura con tu cuenta PayPal.'
       : 'El plan Jr es gratuito. Crea una cuenta para empezar.';
   }
-  modal.dataset.plan = plan === 'pro' ? 'pro' : 'jr';
+  modal.dataset.plan = isPro ? 'pro' : 'jr';
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+
+  if (!isPro) {
+    if (host) host.innerHTML = '';
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.textContent = 'Empezar gratis';
+    }
+    return;
+  }
+
+  if (fallback) fallback.textContent = 'Continuar con PayPal (prueba)';
+  renderPayPalButtons();
 }
+
 function closeCheckout() {
   const modal = document.getElementById('checkoutModal');
   if (!modal) return;
@@ -1596,6 +1710,7 @@ function closeCheckout() {
     document.body.style.overflow = '';
   }
 }
+
 document.addEventListener('click', (e) => {
   const openBtn = e.target.closest('[data-open-checkout]');
   if (openBtn) {
@@ -1607,6 +1722,7 @@ document.addEventListener('click', (e) => {
     closeCheckout();
   }
 });
+
 document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
   const modal = document.getElementById('checkoutModal');
   const plan = modal?.dataset.plan || 'pro';
@@ -1619,18 +1735,21 @@ document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
     }
     return;
   }
-  // Premium demo: require login, set model to pro, toast
-  closeCheckout();
-  if (!currentAuthUser) {
-    openAuth('register');
-    showChatToast('Crea una cuenta para continuar con Premium (demo).');
+  // Fallback sin Client ID: flujo de prueba local
+  if (!PAYPAL_CLIENT_ID) {
+    closeCheckout();
+    if (!currentAuthUser) {
+      openAuth('register');
+      showChatToast('Inicia sesión para vincular Premium. Configura PAYPAL_CLIENT_ID para cobros reales.');
+      return;
+    }
+    activatePremiumLocally();
+    showChatToast('Premium de prueba (sin PayPal Client ID configurado).');
     return;
   }
-  if (chatEls.model) setModelValue('pro');
-  safeSave(`santitosia:plan:${chatUserId || 'guest'}`, 'pro');
-  showChatToast('Premium activado en modo demostración (sin cobro real).');
+  showChatToast('Usa el botón de PayPal para completar el pago.');
 });
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeCheckout();
 });
-
