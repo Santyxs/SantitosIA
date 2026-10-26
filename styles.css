@@ -1619,3 +1619,7 @@ body.chat-compact .chat-stage{padding-top:18px}
   .chat-message.assistant-message .message-body,
   .chat-message.assistant-message.typing-row .message-body{width:100%!important;max-width:100%!important;margin:0!important;}
 }
+
+/* Icono del diario: mismo estilo lineal que los demás iconos de navegación */
+.chat-nav-item .nav-glyph-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 21px;width:21px;height:21px;font-size:inherit;line-height:1}
+.chat-nav-item .nav-glyph-icon svg{display:block;width:19px;height:19px;stroke:currentColor}
