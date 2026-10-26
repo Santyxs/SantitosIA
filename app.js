@@ -786,11 +786,6 @@ function showTypingIndicator() {
   avatar.className = 'message-avatar';
   const typingPrefs = getCompanionPrefs();
   const typingAvatarUrl = getCharacterImagePath(typingPrefs.character, 'pensando', typingPrefs.appearance);
-  // Large decorative background uses higher-quality default portrait
-  const bgUrl = typingPrefs.appearance === 'wolf'
-    ? 'assets/logo.png'
-    : `assets/characters/${getCharacterInfo(typingPrefs.character).folder || 'santitos'}/default.png?v3`;
-  if (chatEls.messages) chatEls.messages.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
   avatar.innerHTML = assistantAvatarMarkup(typingPrefs.character, typingPrefs.appearance, 'pensando');
   avatar.classList.add('is-thinking');
   avatar.classList.add(`companion-avatar-${getCharacterInfo(getCompanionPrefs().character).color}`);

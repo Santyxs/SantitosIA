@@ -1584,56 +1584,9 @@ body.chat-compact .chat-stage{padding-top:18px}
 
 
 /* Fondo unico del personaje: nunca repetir un avatar en cada respuesta */
-.chat-messages{
-  position:relative!important;
-  background-image:var(--chat-companion-image)!important;
-  background-repeat:no-repeat!important;
-  background-position:center 30%!important;
-  background-size:min(42vw,380px) auto!important;
-  background-attachment:scroll!important;
-  /* keep the large portrait subtle so it doesn't overpower the chat */
-}
-.chat-message.assistant-message .message-avatar,
-.chat-message.assistant-message.typing-row .message-avatar{
-  display:none!important;
-}
-.chat-message.assistant-message{
-  min-height:0!important;
-  padding:12px 0!important;
-  align-items:flex-start!important;
-}
-.chat-message.assistant-message .message-body,
-.chat-message.assistant-message.typing-row .message-body{
-  width:min(700px,100%)!important;
-  max-width:min(700px,100%)!important;
-  margin-left:auto!important;
-  margin-right:auto!important;
-}
-.chat-message.assistant-message .message-bubble{
-  background:rgba(9,15,34,.48)!important;
-  backdrop-filter:blur(2px);
-  -webkit-backdrop-filter:blur(2px);
-}
-@media(max-width:640px){
-  .chat-messages{background-size:min(92vw,360px) auto!important;}
-  .chat-message.assistant-message{padding:9px 0!important;min-height:0!important;}
-  .chat-message.assistant-message .message-body,
-  .chat-message.assistant-message.typing-row .message-body{width:100%!important;max-width:100%!important;margin:0!important;}
-}
-
-/* Icono del diario: mismo estilo lineal que los demás iconos de navegación */
-.chat-nav-item .nav-glyph-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 21px;width:21px;height:21px;font-size:inherit;line-height:1}
-.chat-nav-item .nav-glyph-icon svg{display:block;width:19px;height:19px;stroke:currentColor}
-
-
-/* Avatar: una sola imagen de fondo, únicamente dentro del chat */
 .chat-messages {
   position: relative !important;
-  background-image: var(--chat-companion-image) !important;
-  background-repeat: no-repeat !important;
-  background-position: center 28% !important;
-  background-size: min(38vw, 340px) auto !important;
-  background-attachment: scroll !important;
+  /* large companion background disabled */
 }
 .chat-message.assistant-message .message-avatar,
 .chat-message.assistant-message.typing-row .message-avatar {
@@ -1676,15 +1629,17 @@ body.chat-compact .chat-stage{padding-top:18px}
   left: calc(50% + 125px);
   top: 53%;
   transform: translate(-50%, -50%);
+  /* large companion background layer disabled
   width: min(36vw, 420px);
   height: 60vh;
-  background-image: var(--chat-companion-image);
+  /* background-image disabled */
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
   opacity: .28;
   pointer-events: none;
   filter: saturate(1.05) brightness(0.95);
+  */
   z-index: -1;
 }
 .chat-message.assistant-message .message-avatar,
