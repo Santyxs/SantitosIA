@@ -396,15 +396,16 @@ const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}
 // Se activa cuando exista un modelo Premium real y una verificación de pago del lado servidor.
 const PREMIUM_PLAN_ENABLED = false;
 const CHARACTER_INFO = {
-  santitos: { name: 'SantitosIA', selectorName: 'SantitosIA · Masculino', description: 'Directo, maduro y con carácter', icon: '✦', color: 'santitos' },
-  jr: { name: 'Santitos Jr.', selectorName: 'Santitos Jr.', description: 'Joven, cercano y expresivo', icon: '✧', color: 'jr' },
-  syntia: { name: 'SantitosIA', selectorName: 'SantitosIA · Femenino', description: 'Ingeniosa, cercana y resolutiva', icon: '✦', color: 'syntia' },
+  santitos: { name: 'SantitosIA', selectorName: 'SantitosIA · Masculino', description: 'Directo, maduro y con carácter', icon: '✦', color: 'santitos', folder: 'santitos' },
+  jr: { name: 'Santitos Jr.', selectorName: 'Santitos Jr.', description: 'Joven, cercano y expresivo', icon: '✧', color: 'jr', folder: 'santitos' },
+  syntia: { name: 'SantitosIA', selectorName: 'SantitosIA · Femenino', description: 'Ingeniosa, cercana y resolutiva', icon: '✦', color: 'syntia', folder: 'syntia' },
 };
+const CHARACTER_EXPRESSIONS = ['reposo', 'pensando', 'hablando', 'sonrisa'];
 function getCompanionPrefs() {
   let value = {};
   try { value = JSON.parse(safeRead(COMPANION_PREFS_KEY()) || '{}') || {}; } catch (_) {}
   return {
-    character: Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'jr',
+    character: Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'santitos',
     appearance: value.appearance === 'wolf' ? 'wolf' : 'human',
     autoVoice: value.autoVoice === true,
     voiceURI: typeof value.voiceURI === 'string' ? value.voiceURI : '',
@@ -416,11 +417,19 @@ function saveCompanionPrefs(next) {
   safeSave(COMPANION_PREFS_KEY(), JSON.stringify(updated));
   return updated;
 }
-function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
-function assistantAvatarMarkup(characterId, appearance) {
-  const id = Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr';
-  const src = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${id}.svg`;
-  return `<img src="${src}" alt="" />`;
+function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.santitos; }
+/** Returns the best available image path for a character + expression. */
+function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
+  if (appearance === 'wolf') return 'assets/logo.png';
+  const info = getCharacterInfo(characterId);
+  const folder = info.folder || 'santitos';
+  const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
+  // Prefer PNG expression sheets; fallback to default.png then legacy SVG
+  return `assets/characters/${folder}/${expr}.png`;
+}
+function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
+  const src = getCharacterImagePath(characterId, expression, appearance);
+  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" />`;
 }
 function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -775,9 +784,10 @@ function showTypingIndicator() {
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
   const typingPrefs = getCompanionPrefs();
-  const typingAvatarUrl = typingPrefs.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, typingPrefs.character) ? typingPrefs.character : 'jr'}.svg`;
+  const typingAvatarUrl = getCharacterImagePath(typingPrefs.character, 'pensando', typingPrefs.appearance);
   if (chatEls.messages) chatEls.messages.style.setProperty('--chat-companion-image', `url("${typingAvatarUrl}")`);
-  avatar.innerHTML = assistantAvatarMarkup(typingPrefs.character, typingPrefs.appearance);
+  avatar.innerHTML = assistantAvatarMarkup(typingPrefs.character, typingPrefs.appearance, 'pensando');
+  avatar.classList.add('is-thinking');
   avatar.classList.add(`companion-avatar-${getCharacterInfo(getCompanionPrefs().character).color}`);
   const body = document.createElement('div');
   body.className = 'message-body';
@@ -850,11 +860,18 @@ function createMessageNode(item, addActions) {
     const appearance = item.appearance || prefs.appearance;
     const info = getCharacterInfo(characterId);
     avatar.classList.add(`companion-avatar-${info.color}`);
-    const avatarUrl = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr'}.svg`;
-
+    // Choose expression: sonrisa for positive/short replies, hablando otherwise
+    let expression = 'hablando';
+    const content = String(item.content || '');
+    if (content.length < 80 || /[😀😊😄🙂¡!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
+      expression = 'sonrisa';
+    }
+    const avatarUrl = getCharacterImagePath(characterId, expression, appearance);
     const image = document.createElement('img');
     image.src = avatarUrl;
     image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
+    image.className = 'companion-face';
+    image.dataset.expression = expression;
     avatar.append(image);
   } else {
     const custom = getCustomUserAvatar();
@@ -1468,7 +1485,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     avatar.className = `companion-preview-avatar companion-avatar-${info.color}${current.appearance === 'wolf' ? ' companion-preview-wolf' : ''}`;
     avatar.replaceChildren();
     const img = document.createElement('img');
-    img.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${current.character}.svg`;
+    img.src = getCharacterImagePath(current.character, 'reposo', current.appearance);
     img.alt = `${info.selectorName || info.name}`;
     avatar.append(img);
     characterButtons.forEach((button, id) => {
@@ -1479,7 +1496,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
       if (mark) mark.textContent = selected ? '✓' : '+';
       const image = button.querySelector('img');
       if (image) {
-        image.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${id}.svg`;
+        image.src = getCharacterImagePath(id, 'reposo', current.appearance);
         image.alt = `${getCharacterInfo(id).selectorName || getCharacterInfo(id).name}`;
       }
     });
@@ -1493,7 +1510,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     button.dataset.character = choice.id;
     button.setAttribute('aria-label', `${choice.label}, ${choice.type}`);
     const imageFrame = document.createElement('span'); imageFrame.className = 'companion-character-image';
-    const image = document.createElement('img'); image.src = `assets/characters/${choice.id}.svg`; image.alt = ''; image.loading = 'lazy';
+    const image = document.createElement('img'); image.src = getCharacterImagePath(choice.id, 'reposo', 'human'); image.alt = ''; image.loading = 'lazy'; image.className = 'companion-face';
     imageFrame.append(image);
     const copy = document.createElement('span'); copy.className = 'companion-character-copy';
     const title = document.createElement('strong'); title.textContent = choice.label;

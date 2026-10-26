@@ -1709,3 +1709,60 @@ body.chat-compact .chat-stage{padding-top:18px}
     opacity: .24;
   }
 }
+
+/* ── Companion face expressions & soft animations ── */
+.message-avatar .companion-face,
+.companion-preview-avatar .companion-face,
+.companion-character-image .companion-face {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  transition: opacity .35s ease, transform .4s ease;
+}
+
+/* Subtle breathing */
+@keyframes companion-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+.message-avatar:not(.user-avatar) img.companion-face,
+.companion-preview-avatar img.companion-face {
+  animation: companion-breathe 4.5s ease-in-out infinite;
+}
+
+/* Thinking state – slight faster pulse + dim */
+.message-avatar.is-thinking img.companion-face {
+  animation: companion-think 1.6s ease-in-out infinite;
+  filter: brightness(1.05);
+}
+@keyframes companion-think {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.92; }
+}
+
+/* Smooth entrance for messages */
+.chat-message {
+  animation: message-in .38s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Character selector cards look better with new portraits */
+.companion-character-image {
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0c0c1a;
+}
+.companion-character-image img {
+  transition: transform .3s ease;
+}
+.companion-character-option:hover .companion-character-image img,
+.companion-character-option.selected .companion-character-image img {
+  transform: scale(1.06);
+}
+.companion-preview-avatar {
+  overflow: hidden;
+}
