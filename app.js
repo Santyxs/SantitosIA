@@ -908,7 +908,7 @@ function createMessageNode(item, addActions) {
     const listen = document.createElement('button');
     listen.className = 'message-action'; listen.type = 'button';
     listen.setAttribute('aria-label', 'Escuchar respuesta');
-    listen.innerHTML = '<span aria-hidden="true">🔊</span><span>Escuchar</span>';
+    listen.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.7l3.3 2.5v-9L5.2 6H2.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Escuchar</span>';
     listen.addEventListener('click', () => speakText(item.content || ''));
     actions.append(listen);
     if (addActions) {
