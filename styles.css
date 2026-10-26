@@ -1,4 +1,4 @@
-﻿*,*::before,*::after{box-sizing:border-box}
+*,*::before,*::after{box-sizing:border-box}
 :root{
   --bg:#07071a;
   --panel:#111120;
@@ -1614,6 +1614,35 @@ body.chat-compact .chat-stage{padding-top:18px}
 @keyframes companion-breathe {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -50%) scale(1.02); }
+}
+
+/* 4. Estados dinámicos de la ilustración: esperando, pensando y hablando */
+.chat-stage[data-companion-expression="pensando"] .chat-messages::before {
+  opacity: 0.38 !important;
+  filter: drop-shadow(0 0 50px rgba(140, 100, 255, 0.45)) brightness(1.1) saturate(1.22);
+  animation: companion-think 2s ease-in-out infinite !important;
+}
+
+@keyframes companion-think {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.035); }
+}
+
+.chat-stage[data-companion-expression="hablando"] .chat-messages::before,
+.chat-stage[data-companion-expression="sonrisa"] .chat-messages::before {
+  opacity: 0.34 !important;
+  filter: drop-shadow(0 0 45px rgba(90, 190, 255, 0.38)) brightness(1.08) saturate(1.18);
+  animation: companion-speak 1.9s ease-in-out infinite !important;
+}
+
+@keyframes companion-speak {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.025); }
+}
+
+.chat-stage[data-companion-expression="reposo"] .chat-messages::before {
+  opacity: 0.26;
+  animation: companion-breathe 6s ease-in-out infinite;
 }
 
 @media (max-width: 900px) {

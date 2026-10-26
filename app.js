@@ -415,6 +415,7 @@ function saveCompanionPrefs(next) {
   const current = getCompanionPrefs();
   const updated = { ...current, ...next };
   safeSave(COMPANION_PREFS_KEY(), JSON.stringify(updated));
+  preloadCharacterExpressions(updated.character);
   updateChatCompanionBackground('reposo');
   return updated;
 }
@@ -433,16 +434,42 @@ function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
   const src = getCharacterImagePath(characterId, expression, appearance);
   return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" onerror="this.onerror=null;this.src='assets/logo.png';" />`;
 }
-function updateChatCompanionBackground(expression = 'reposo') {
+let companionExpressionTimer = null;
+let currentCompanionExpression = 'reposo';
+
+function preloadCharacterExpressions(characterId) {
+  const info = getCharacterInfo(characterId);
+  CHARACTER_EXPRESSIONS.forEach((expr) => {
+    const img = new Image();
+    img.src = getCharacterImagePath(characterId, expr, 'human');
+  });
+}
+
+function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) {
   if (!chatEls.messages) return;
   const prefs = getCompanionPrefs();
+  const validExpr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
+  currentCompanionExpression = validExpr;
   const bgUrl = prefs.appearance === 'wolf'
     ? 'assets/logo.png'
-    : getCharacterImagePath(prefs.character, expression, 'human');
+    : getCharacterImagePath(prefs.character, validExpr, 'human');
   chatEls.messages.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
+  if (chatEls.stage) {
+    chatEls.stage.dataset.companionExpression = validExpr;
+  }
+  if (companionExpressionTimer) {
+    window.clearTimeout(companionExpressionTimer);
+    companionExpressionTimer = null;
+  }
+  if (lockDuration > 0) {
+    companionExpressionTimer = window.setTimeout(() => {
+      updateChatCompanionBackground('reposo');
+    }, lockDuration);
+  }
 }
 function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  updateChatCompanionBackground('reposo');
 }
 function speakText(text) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -459,7 +486,12 @@ function speakText(text) {
   const selectedVoice = voices.find((voice) => voice.voiceURI === prefs.voiceURI);
   const spanishVoice = voices.find((voice) => /^es(-|_)/i.test(voice.lang));
   if (selectedVoice || spanishVoice) utterance.voice = selectedVoice || spanishVoice;
-  utterance.onerror = () => showChatToast('No se ha podido reproducir la voz en este dispositivo.');
+  utterance.onstart = () => updateChatCompanionBackground('hablando');
+  utterance.onend = () => updateChatCompanionBackground('reposo');
+  utterance.onerror = () => {
+    showChatToast('No se ha podido reproducir la voz en este dispositivo.');
+    updateChatCompanionBackground('reposo');
+  };
   window.speechSynthesis.speak(utterance);
   return true;
 }
@@ -562,6 +594,7 @@ function updateChatUser(user) {
   else showChatWelcome();
   renderRecentChats();
   applyUiPreferences();
+  preloadCharacterExpressions(getCompanionPrefs().character);
   updateChatCompanionBackground('reposo');
 }
 
@@ -1143,8 +1176,8 @@ async function generateReplyForSession(session, options = {}) {
   if (content.length < 90 || /[😀😊😄🙂¡!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
     expression = 'sonrisa';
   }
-  updateChatCompanionBackground(expression);
-  window.setTimeout(() => updateChatCompanionBackground('reposo'), 4500);
+  const lockTime = prefs.autoVoice ? 0 : 5500;
+  updateChatCompanionBackground(expression, lockTime);
   if (!assistantMessage.failed && prefs.autoVoice) speakText(assistantMessage.content);
 }
 
