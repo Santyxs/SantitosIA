@@ -421,15 +421,16 @@ function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.sant
 /** Returns the best available image path for a character + expression. */
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.png';
+  // cache-bust so browsers pick up the new images quickly
+  const CACHE = 'v2';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
   const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
-  // Prefer PNG expression sheets; fallback to default.png then legacy SVG
-  return `assets/characters/${folder}/${expr}.png`;
+  return `assets/characters/${folder}/${expr}.png?${CACHE}`;
 }
 function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
   const src = getCharacterImagePath(characterId, expression, appearance);
-  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" />`;
+  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" onerror="this.onerror=null;this.src='assets/logo.png';" />`;
 }
 function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -872,6 +873,7 @@ function createMessageNode(item, addActions) {
     image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
     image.className = 'companion-face';
     image.dataset.expression = expression;
+    image.onerror = function() { this.onerror = null; this.src = 'assets/logo.png'; };
     avatar.append(image);
   } else {
     const custom = getCustomUserAvatar();
