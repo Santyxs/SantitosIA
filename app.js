@@ -186,9 +186,17 @@ function setUser(user) {
     closeAccountMenu();
   }
   updateChatUser(loggedIn ? user : null);
-  // La portada permanece en /SantitosIA/ y el chat usa la ruta /SantitosIA/chat.
-  if (loggedIn && routeFromLocation() === 'chat') showChatView();
-  else showLandingView();
+  // Mantener la ruta solicitada al recargar subpáginas protegidas.
+  const currentRoute = routeFromLocation();
+  if (loggedIn && currentRoute !== 'home') {
+    showChatView();
+    if (currentRoute === 'chat') {
+      const active = activeSession();
+      if (active) renderConversation(active.id); else showChatWelcome();
+    } else {
+      showPanel(currentRoute);
+    }
+  } else showLandingView();
 }
 
 function accountAction(action) {
@@ -348,7 +356,7 @@ window.addEventListener('resize', () => {
   }
 });
 
-// ─── SantitosIA chat workspace (UI preview; the AI provider is not connected yet) ───
+// ─── SantitosIA workspace ─────────────────────────────────
 const chatEls = {
   app: document.getElementById('chatApp'),
   sidebar: document.getElementById('chatSidebar'),
@@ -383,6 +391,119 @@ let activeChatSection = 'chat';
 let selectedAttachments = [];
 let webSearchEnabled = false;
 let toastTimer = null;
+let aiRequestInProgress = false;
+const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}`;
+// Se activa cuando exista un modelo Premium real y una verificación de pago del lado servidor.
+const PREMIUM_PLAN_ENABLED = false;
+const CHARACTER_INFO = {
+  santitos: { name: 'Santitos', initials: 'S', icon: '🐺', color: 'santitos' },
+  jr: { name: 'Santitos Jr.', initials: 'Jr', icon: '🐺', color: 'jr' },
+  syntia: { name: 'Syntia', initials: 'Sy', icon: '🐺', color: 'syntia' },
+};
+function getCompanionPrefs() {
+  let value = {};
+  try { value = JSON.parse(safeRead(COMPANION_PREFS_KEY()) || '{}') || {}; } catch (_) {}
+  return {
+    character: Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'jr',
+    appearance: value.appearance === 'wolf' ? 'wolf' : 'human',
+    autoVoice: value.autoVoice === true,
+    voiceURI: typeof value.voiceURI === 'string' ? value.voiceURI : '',
+  };
+}
+function saveCompanionPrefs(next) {
+  const current = getCompanionPrefs();
+  const updated = { ...current, ...next };
+  safeSave(COMPANION_PREFS_KEY(), JSON.stringify(updated));
+  return updated;
+}
+function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
+function assistantAvatarMarkup(characterId, appearance) {
+  const id = Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr';
+  const src = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${id}.svg`;
+  return `<img src="${src}" alt="" />`;
+}
+function stopSpeaking() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+function speakText(text) {
+  if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+    showChatToast('La lectura en voz alta no está disponible en este navegador.');
+    return false;
+  }
+  stopSpeaking();
+  const prefs = getCompanionPrefs();
+  const utterance = new SpeechSynthesisUtterance(String(text || '').slice(0, 12000));
+  utterance.lang = 'es-ES';
+  utterance.rate = prefs.character === 'jr' ? 1.04 : 0.96;
+  utterance.pitch = prefs.character === 'syntia' ? 1.12 : (prefs.character === 'jr' ? 1.08 : 0.94);
+  const voices = window.speechSynthesis.getVoices();
+  const selectedVoice = voices.find((voice) => voice.voiceURI === prefs.voiceURI);
+  const spanishVoice = voices.find((voice) => /^es(-|_)/i.test(voice.lang));
+  if (selectedVoice || spanishVoice) utterance.voice = selectedVoice || spanishVoice;
+  utterance.onerror = () => showChatToast('No se ha podido reproducir la voz en este dispositivo.');
+  window.speechSynthesis.speak(utterance);
+  return true;
+}
+async function readAttachmentData(files) {
+  const result = { text: '', images: [] };
+  for (const file of (files || []).slice(0, 8)) {
+    const name = String(file.name || 'archivo');
+    const extension = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    const isImage = /^image\/(png|jpeg|webp|gif)$/i.test(file.type || '') && ['png','jpg','jpeg','webp','gif'].includes(extension);
+    if (isImage) {
+      if (file.size > 500000) { showChatToast(`La imagen «${name}» supera 500 KB y no se ha enviado.`); continue; }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = reject; reader.readAsDataURL(file);
+        });
+        result.images.push({ name, dataUrl });
+      } catch (_) { showChatToast(`No se ha podido leer la imagen «${name}».`); }
+      continue;
+    }
+    const textExtensions = ['txt','md','json','yml','yaml','java','js','py','html','css','xml','properties','log','toml','sql','csv','gradle','kt','ts','tsx','jsx','ini','conf','cfg'];
+    const appearsText = textExtensions.includes(extension) || /^text\//i.test(file.type || '') || /json|javascript|xml|yaml/i.test(file.type || '');
+    if (appearsText) {
+      if (file.size > 700000) { result.text += `
+
+[${name}: archivo demasiado grande para procesarlo en una petición; límite 700 KB.]`; continue; }
+      try {
+        const content = await file.text();
+        const clipped = content.slice(0, 80000);
+        result.text += `
+
+[Contenido de ${name}${content.length > clipped.length ? ' (contenido recortado a 80 000 caracteres)' : ''}]
+${clipped}`;
+      } catch (_) { result.text += `
+
+[No se pudo leer ${name}.]`; }
+    } else if (extension === 'zip') {
+      result.text += `
+
+[Se adjuntó ${name}, un ZIP. La lectura automática de archivos comprimidos todavía no está disponible; extrae y adjunta los archivos de texto que quieras analizar.]`;
+    } else if (!isImage) {
+      result.text += `
+
+[Se adjuntó ${name}; este tipo de archivo no se ha podido leer como texto.]`;
+    }
+  }
+  return result;
+}
+async function functionErrorMessage(error) {
+  let message = '';
+  try {
+    if (error && error.context && typeof error.context.json === 'function') {
+      const body = await error.context.json();
+      message = body && (body.error || body.message) || '';
+    }
+  } catch (_) {}
+  if (message) return message;
+  const status = error && error.context && error.context.status;
+  if (status === 404) return 'La función segura de IA no está desplegada en Supabase. Sigue las instrucciones del ZIP para publicarla.';
+  if (status === 401) return 'Tu sesión no es válida. Cierra sesión e inicia sesión de nuevo.';
+  if (status === 429) return 'Has alcanzado el límite de uso. Prueba más tarde o mañana.';
+  return 'No se ha podido contactar con la IA. Comprueba la configuración de Supabase y vuelve a intentarlo.';
+}
 
 function showChatView() {
   if (!chatEls.app) return;
@@ -408,7 +529,7 @@ function updateChatUser(user) {
   if (chatEls.avatar) chatEls.avatar.textContent = (user ? name : 'S').charAt(0).toLocaleUpperCase('es');
   if (chatEls.model) {
     let preferred = safeRead(`santitosia:model:${chatUserId || 'guest'}`) || 'jr';
-    if (preferred === 'pro' && !hasPremiumPlan()) preferred = 'jr';
+    if (preferred === 'pro' && (!PREMIUM_PLAN_ENABLED || !hasPremiumPlan())) preferred = 'jr';
     chatEls.model.value = preferred === 'pro' ? 'pro' : 'jr';
     if (preferred !== 'pro') safeSave(`santitosia:model:${chatUserId || 'guest'}`, 'jr');
     updatePlanCard();
@@ -573,14 +694,14 @@ function updatePlanCard() {
   }
   if (chatEls.modelPickerMark) chatEls.modelPickerMark.textContent = pro ? '✧' : '↯';
   if (chatEls.modelMenu) {
-    const unlocked = hasPremiumPlan();
+    const unlocked = PREMIUM_PLAN_ENABLED && hasPremiumPlan();
     chatEls.modelMenu.querySelectorAll('.model-option').forEach((opt) => {
       const active = opt.dataset.model === (pro ? 'pro' : 'jr');
       opt.classList.toggle('active', active);
       opt.setAttribute('aria-selected', String(active));
       if (opt.dataset.model === 'pro') {
         opt.classList.toggle('locked', !unlocked);
-        opt.title = unlocked ? '' : 'Requiere plan Premium';
+        opt.title = unlocked ? '' : (PREMIUM_PLAN_ENABLED ? 'Requiere plan Premium' : 'Santitos Premium estará disponible cuando se conecten el modelo y el pago seguro');
       }
     });
   }
@@ -601,12 +722,10 @@ function hasPremiumPlan() {
   return safeRead(planStorageKey()) === 'pro';
 }
 function requirePremiumOrCheckout() {
-  if (hasPremiumPlan()) return true;
-  showChatToast('Santitos Premium requiere suscripción. Completa el pago para usarlo.', { important: true });
+  if (PREMIUM_PLAN_ENABLED && hasPremiumPlan()) return true;
+  showChatToast('Santitos Premium todavía no está disponible. No se realizarán cobros en esta versión.', { important: true });
   closeModelMenu();
-  if (typeof openCheckout === 'function') {
-    window.setTimeout(() => openCheckout('pro'), 180);
-  }
+  if (PREMIUM_PLAN_ENABLED && typeof openCheckout === 'function') window.setTimeout(() => openCheckout('pro'), 180);
   return false;
 }
 
@@ -614,6 +733,13 @@ function setModelValue(value, options = {}) {
   if (!chatEls.model) return;
   const next = value === 'pro' ? 'pro' : 'jr';
   const skipPaywall = !!(options && options.skipPaywall);
+  if (next === 'pro' && !PREMIUM_PLAN_ENABLED) {
+    chatEls.model.value = 'jr';
+    updatePlanCard();
+    showChatToast('Santitos Premium estará disponible cuando el modelo y la activación del pago estén conectados de forma segura.', { important: true });
+    closeModelMenu();
+    return;
+  }
   if (next === 'pro' && !skipPaywall && !hasPremiumPlan()) {
     // Forzar UI en Jr y abrir checkout
     chatEls.model.value = 'jr';
@@ -648,10 +774,8 @@ function showTypingIndicator() {
   row.setAttribute('aria-label', 'SantitosIA está escribiendo');
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
-  const image = document.createElement('img');
-  image.src = 'assets/logo.png';
-  image.alt = 'SantitosIA';
-  avatar.append(image);
+  avatar.innerHTML = assistantAvatarMarkup(getCompanionPrefs().character, getCompanionPrefs().appearance);
+  avatar.classList.add(`companion-avatar-${getCharacterInfo(getCompanionPrefs().character).color}`);
   const body = document.createElement('div');
   body.className = 'message-body';
   const bubble = document.createElement('div');
@@ -718,8 +842,15 @@ function createMessageNode(item, addActions) {
   const avatar = document.createElement('div');
   avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
   if (role === 'assistant') {
+    const prefs = getCompanionPrefs();
+    const characterId = item.character || prefs.character;
+    const appearance = item.appearance || prefs.appearance;
+    const info = getCharacterInfo(characterId);
+    avatar.classList.add(`companion-avatar-${info.color}`);
     const image = document.createElement('img');
-    image.src = 'assets/logo.png'; image.alt = 'SantitosIA'; avatar.append(image);
+    image.src = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr'}.svg`;
+    image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
+    avatar.append(image);
   } else {
     const custom = getCustomUserAvatar();
     if (custom) {
@@ -734,10 +865,13 @@ function createMessageNode(item, addActions) {
   }
   const body = document.createElement('div'); body.className = 'message-body';
   const meta = document.createElement('div'); meta.className = 'message-meta';
-  const name = document.createElement('span'); name.textContent = role === 'user' ? 'Tú' : 'SantitosIA'; meta.append(name);
+  const name = document.createElement('span');
+  const messageCharacter = item.character || getCompanionPrefs().character;
+  name.textContent = role === 'user' ? 'Tú' : getCharacterInfo(messageCharacter).name;
+  meta.append(name);
   if (role === 'assistant') {
     const tag = document.createElement('span'); tag.className = 'message-tag';
-    tag.textContent = chatEls.model && chatEls.model.value === 'pro' ? 'SANTITOS' : 'SANTITOS JR'; meta.append(tag);
+    tag.textContent = (item.plan || (chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr')) === 'pro' ? 'PREMIUM' : 'GRATIS'; meta.append(tag);
   }
   const time = document.createElement('time');
   const date = new Date(item.timestamp || Date.now());
@@ -766,6 +900,12 @@ function createMessageNode(item, addActions) {
     copy.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Copiar</span>';
     copy.addEventListener('click', () => copyText(item.content || ''));
     actions.append(copy);
+    const listen = document.createElement('button');
+    listen.className = 'message-action'; listen.type = 'button';
+    listen.setAttribute('aria-label', 'Escuchar respuesta');
+    listen.innerHTML = '<span aria-hidden="true">🔊</span><span>Escuchar</span>';
+    listen.addEventListener('click', () => speakText(item.content || ''));
+    actions.append(listen);
     if (addActions) {
       const regen = document.createElement('button');
       regen.className = 'message-action';
@@ -925,32 +1065,104 @@ function collectAllAttachments() {
   });
   return list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
+async function callCompanionAI({ messages, mode: requestMode = 'chat', images = [] }) {
+  const prefs = getCompanionPrefs();
+  const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
+  const { data, error } = await sb.functions.invoke('chat', {
+    body: {
+      mode: requestMode,
+      plan,
+      character: prefs.character,
+      appearance: prefs.appearance,
+      messages,
+      images: images.slice(0, 2),
+    },
+  });
+  if (error) throw new Error(await functionErrorMessage(error));
+  if (!data || typeof data.reply !== 'string' || !data.reply.trim()) {
+    throw new Error('La IA no devolvió una respuesta válida. Inténtalo de nuevo.');
+  }
+  return data;
+}
+
+async function callStandaloneAI(options) {
+  if (aiRequestInProgress) throw new Error('Espera a que termine la respuesta actual.');
+  aiRequestInProgress = true;
+  try { return await callCompanionAI(options); }
+  finally { aiRequestInProgress = false; }
+}
+
+async function generateReplyForSession(session, options = {}) {
+  if (!session || aiRequestInProgress) return;
+  aiRequestInProgress = true;
+  if (chatEls.send) chatEls.send.disabled = true;
+  showTypingIndicator();
+  let assistantMessage;
+  const prefs = getCompanionPrefs();
+  const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
+  try {
+    const attachments = options.files ? await readAttachmentData(options.files) : { text: options.extraText || '', images: options.images || [] };
+    if (attachments.text && session.messages.length) {
+      for (let i = session.messages.length - 1; i >= 0; i--) {
+        if (session.messages[i].role === 'user') {
+          session.messages[i].aiContextText = attachments.text.slice(0, 80000);
+          break;
+        }
+      }
+    }
+    const contextMessages = session.messages
+      .filter((message) => !message.failed && (message.role === 'user' || message.role === 'assistant'))
+      .slice(-16)
+      .map((message) => ({
+        role: message.role,
+        content: `${String(message.content || '')}${message.role === 'user' && message.aiContextText ? `\n\n${message.aiContextText}` : ''}`.slice(0, 85000),
+      }));
+    const result = await callCompanionAI({ messages: contextMessages, images: attachments.images, mode: options.mode || 'chat' });
+    assistantMessage = {
+      role: 'assistant', timestamp: Date.now(), content: result.reply,
+      character: prefs.character, appearance: prefs.appearance, plan,
+      usage: result.usage || null,
+    };
+  } catch (error) {
+    const message = error && error.message ? error.message : 'No se ha podido contactar con la IA.';
+    assistantMessage = {
+      role: 'assistant', timestamp: Date.now(), content: message,
+      character: prefs.character, appearance: prefs.appearance, plan, failed: true,
+    };
+    showChatToast(message, { important: true });
+  } finally {
+    removeTypingIndicator();
+    aiRequestInProgress = false;
+    if (chatEls.send) chatEls.send.disabled = false;
+  }
+  session.messages.push(assistantMessage);
+  session.updatedAt = Date.now();
+  saveChatSessions();
+  renderRecentChats();
+  if (activeChatId === session.id && activeChatSection === 'chat') {
+    renderConversation(session.id);
+  }
+  if (!assistantMessage.failed && prefs.autoVoice) speakText(assistantMessage.content);
+}
+
 function regenerateLastAssistant() {
   const session = activeSession();
-  if (!session || !session.messages.length) return;
-  let lastIdx = -1;
+  if (!session || aiRequestInProgress) return;
+  let lastUserIndex = -1;
   for (let i = session.messages.length - 1; i >= 0; i--) {
-    if (session.messages[i].role === 'assistant') { lastIdx = i; break; }
+    if (session.messages[i].role === 'user') { lastUserIndex = i; break; }
   }
-  if (lastIdx < 0) return;
-  const prevUser = [...session.messages].slice(0, lastIdx).reverse().find((m) => m.role === 'user');
-  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
-  session.messages[lastIdx] = {
-    role: 'assistant',
-    timestamp: Date.now(),
-    content: prevUser
-      ? `He vuelto a generar una respuesta de demostración sobre: «${(prevUser.content || '').slice(0, 120)}». Cuando ${modelName} esté conectado, aquí verás una respuesta real.`
-      : `Respuesta regenerada en modo vista previa con ${modelName}.`,
-    previewNote: 'Vista previa: regeneración local, sin modelo de IA conectado.',
-  };
+  if (lastUserIndex < 0) return;
+  session.messages = session.messages.slice(0, lastUserIndex + 1);
   session.updatedAt = Date.now();
   saveChatSessions();
   renderConversation(session.id);
-  showChatToast('Respuesta reintentada (vista previa).');
+  generateReplyForSession(session);
 }
+
 function editLastUserMessage() {
   const session = activeSession();
-  if (!session || !session.messages.length) return;
+  if (!session || !session.messages.length || aiRequestInProgress) return;
   let lastIdx = -1;
   for (let i = session.messages.length - 1; i >= 0; i--) {
     if (session.messages[i].role === 'user') { lastIdx = i; break; }
@@ -962,28 +1174,266 @@ function editLastUserMessage() {
   const text = next.trim();
   if (!text) { showChatToast('El mensaje no puede estar vacío.'); return; }
   session.messages[lastIdx].content = text;
-  // Drop assistant messages after this user message
   session.messages = session.messages.slice(0, lastIdx + 1);
   session.updatedAt = Date.now();
   saveChatSessions();
   renderConversation(session.id);
-  // Trigger a new preview reply
-  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
-  showTypingIndicator();
-  window.setTimeout(() => {
-    removeTypingIndicator();
-    const assistantMessage = {
-      role: 'assistant',
-      timestamp: Date.now(),
-      content: `He tenido en cuenta tu mensaje editado. ${modelName} sigue en vista previa, así que esta respuesta es de demostración.`,
-      previewNote: 'Vista previa tras editar el mensaje.',
-    };
-    session.messages.push(assistantMessage);
-    session.updatedAt = Date.now();
-    saveChatSessions();
-    addMessageToDOM(assistantMessage);
-    renderRecentChats();
-  }, 600);
+  generateReplyForSession(session);
+}
+
+function makeFieldLabel(text, control) {
+  const label = document.createElement('label');
+  label.className = 'journal-field-label';
+  label.append(document.createTextNode(text), control);
+  return label;
+}
+
+function downloadTextFile(filename, text, mime = 'text/markdown;charset=utf-8') {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = filename; anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderDiaryPanel(panel, kicker, heading, description) {
+  kicker.textContent = 'TU ESPACIO PERSONAL';
+  heading.textContent = 'Mi diario';
+  description.textContent = 'Escribe para ti, pide ayuda a la IA para redactar y decide entrada por entrada qué quieres compartir.';
+  const tools = document.createElement('div'); tools.className = 'journal-toolbar';
+  const newButton = document.createElement('button'); newButton.type = 'button'; newButton.className = 'new-chat-button'; newButton.textContent = '+ Nueva entrada';
+  const summaryButton = document.createElement('button'); summaryButton.type = 'button'; summaryButton.className = 'panel-tool-btn'; summaryButton.textContent = 'Preparar resumen de hoy';
+  const exportButton = document.createElement('button'); exportButton.type = 'button'; exportButton.className = 'panel-tool-btn'; exportButton.textContent = 'Exportar diario';
+  tools.append(newButton, summaryButton, exportButton);
+
+  const form = document.createElement('form'); form.className = 'journal-editor'; form.hidden = true;
+  const formTitle = document.createElement('h3'); formTitle.textContent = 'Nueva entrada';
+  const titleInput = document.createElement('input'); titleInput.className = 'journal-input'; titleInput.placeholder = 'Título de la entrada'; titleInput.maxLength = 160; titleInput.required = true;
+  const categorySelect = document.createElement('select'); categorySelect.className = 'journal-input';
+  ['Personal','Estudios','Trabajo','Objetivos','Recuerdos','Desahogo','Otros'].forEach((category) => {
+    const option = document.createElement('option'); option.value = category; option.textContent = category; categorySelect.append(option);
+  });
+  const contentArea = document.createElement('textarea'); contentArea.className = 'journal-input journal-textarea'; contentArea.placeholder = '¿Qué te gustaría recordar?'; contentArea.rows = 7; contentArea.maxLength = 20000; contentArea.required = true;
+  const visibilitySelect = document.createElement('select'); visibilitySelect.className = 'journal-input';
+  [['private','Solo yo (privado)'],['companion','Compartir con mi compañero']].forEach(([value,label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; visibilitySelect.append(option);
+  });
+  const privacyHelp = document.createElement('p'); privacyHelp.className = 'settings-hint'; privacyHelp.textContent = 'Una entrada privada no se envía a la IA por defecto. Si compartes una entrada, solo se enviará al chat cuando pulses “Comentar con IA”.';
+  const actions = document.createElement('div'); actions.className = 'journal-editor-actions';
+  const saveButton = document.createElement('button'); saveButton.type = 'submit'; saveButton.className = 'btn btn-primary btn-small'; saveButton.textContent = 'Guardar entrada';
+  const draftButton = document.createElement('button'); draftButton.type = 'button'; draftButton.className = 'panel-tool-btn'; draftButton.textContent = 'Redactar con IA';
+  const cancelButton = document.createElement('button'); cancelButton.type = 'button'; cancelButton.className = 'panel-tool-btn'; cancelButton.textContent = 'Cancelar';
+  actions.append(saveButton, draftButton, cancelButton);
+  form.append(formTitle, makeFieldLabel('Título', titleInput), makeFieldLabel('Categoría', categorySelect), makeFieldLabel('Contenido', contentArea), makeFieldLabel('Privacidad', visibilitySelect), privacyHelp, actions);
+
+  const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.className = 'journal-search'; searchInput.placeholder = 'Buscar en tus entradas…'; searchInput.setAttribute('aria-label', 'Buscar en el diario por título, contenido o categoría');
+  const listHeading = document.createElement('h3'); listHeading.className = 'journal-list-heading'; listHeading.textContent = 'Tus entradas';
+  const list = document.createElement('div'); list.className = 'journal-list';
+  const status = document.createElement('p'); status.className = 'settings-hint'; status.textContent = 'Cargando las entradas de tu diario…';
+  list.append(status);
+  panel.append(kicker, heading, description, tools, searchInput, form, listHeading, list);
+
+  let entries = [];
+  let editingId = null;
+  const setStatus = (message, error = false) => {
+    status.textContent = message; status.classList.toggle('journal-error', error); status.hidden = !message;
+  };
+  const openEditor = (entry = null) => {
+    editingId = entry ? entry.id : null;
+    formTitle.textContent = entry ? 'Editar entrada' : 'Nueva entrada';
+    titleInput.value = entry ? entry.title : '';
+    categorySelect.value = entry ? entry.category : 'Personal';
+    contentArea.value = entry ? entry.content : '';
+    visibilitySelect.value = entry ? entry.visibility : 'private';
+    saveButton.textContent = entry ? 'Guardar cambios' : 'Guardar entrada';
+    form.hidden = false; titleInput.focus();
+  };
+  newButton.addEventListener('click', () => openEditor());
+  cancelButton.addEventListener('click', () => { form.hidden = true; editingId = null; });
+
+  async function loadEntries() {
+    if (!chatUserId) { list.replaceChildren(status); setStatus('Inicia sesión para utilizar tu diario.', true); return; }
+    const { data, error } = await sb.from('journal_entries').select('id,title,content,category,visibility,created_at,updated_at').eq('user_id', chatUserId).order('updated_at', { ascending: false }).limit(100);
+    if (error) {
+      list.replaceChildren(status);
+      setStatus('No se pudo cargar el diario. Comprueba que has ejecutado el archivo SQL de configuración incluido en el ZIP. No se ha guardado nada localmente.', true);
+      console.error('Error loading journal:', error.message);
+      return;
+    }
+    entries = data || [];
+    renderEntries();
+  }
+
+  function renderEntries() {
+    const query = searchInput.value.trim().toLocaleLowerCase('es');
+    const visibleEntries = entries.filter((entry) => !query || [entry.title, entry.content, entry.category].some((value) => String(value || '').toLocaleLowerCase('es').includes(query)));
+    list.replaceChildren(status);
+    if (!visibleEntries.length) {
+      setStatus(entries.length ? 'No hay entradas que coincidan con la búsqueda.' : 'Todavía no tienes entradas. Tu diario es privado por defecto.');
+      return;
+    }
+    setStatus('');
+    visibleEntries.forEach((entry) => {
+      const card = document.createElement('article'); card.className = 'journal-entry-card';
+      const head = document.createElement('div'); head.className = 'journal-entry-head';
+      const entryTitle = document.createElement('h4'); entryTitle.textContent = entry.title;
+      const meta = document.createElement('div'); meta.className = 'journal-entry-meta';
+      const date = new Date(entry.updated_at || entry.created_at);
+      meta.textContent = `${entry.category || 'Personal'} · ${date.toLocaleDateString('es-ES')} · ${entry.visibility === 'companion' ? 'Compartida con tu compañero' : 'Privada'}`;
+      head.append(entryTitle, meta);
+      const body = document.createElement('p'); body.className = 'journal-entry-content'; body.textContent = entry.content;
+      const row = document.createElement('div'); row.className = 'journal-entry-actions';
+      const tool = (label, handler, danger = false) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'panel-tool-btn' + (danger ? ' journal-danger' : ''); button.textContent = label; button.addEventListener('click', handler); return button;
+      };
+      row.append(tool('Editar', () => openEditor(entry)));
+      row.append(tool('Descargar', () => downloadTextFile(`${(entry.title || 'diario').replace(/[^\w\- áéíóúñü]/gi, '').trim() || 'diario'}.md`, `# ${entry.title}\n\nFecha: ${date.toLocaleDateString('es-ES')}\nCategoría: ${entry.category}\nPrivacidad: ${entry.visibility === 'companion' ? 'Compartida con el compañero' : 'Privada'}\n\n${entry.content}\n`)));
+      if (entry.visibility === 'companion') {
+        row.append(tool('Comentar con IA', () => shareEntryWithChat(entry, false)));
+      } else {
+        row.append(tool('Compartir con compañero', () => shareEntryWithChat(entry, true)));
+      }
+      row.append(tool('Borrar', async () => {
+        if (!window.confirm(`¿Borrar la entrada «${entry.title}»? Esta acción no se puede deshacer.`)) return;
+        const { error: deleteError } = await sb.from('journal_entries').delete().eq('id', entry.id).eq('user_id', chatUserId);
+        if (deleteError) { showChatToast('No se pudo borrar la entrada.', { important: true }); return; }
+        showChatToast('Entrada eliminada.'); await loadEntries();
+      }, true));
+      card.append(head, body, row); list.append(card);
+    });
+  }
+
+  searchInput.addEventListener('input', renderEntries);
+
+  async function shareEntryWithChat(entry, changeVisibility) {
+    if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
+    if (changeVisibility) {
+      const confirmed = window.confirm(`Para comentar «${entry.title}», se compartirá esta entrada con tu compañero. La IA recibirá el contenido solo al abrir esta conversación. ¿Continuar?`);
+      if (!confirmed) return;
+      const { error } = await sb.from('journal_entries').update({ visibility: 'companion' }).eq('id', entry.id).eq('user_id', chatUserId);
+      if (error) { showChatToast('No se pudo cambiar la privacidad de la entrada.', { important: true }); return; }
+      entry.visibility = 'companion'; await loadEntries();
+    } else {
+      const confirmed = window.confirm(`Vas a enviar «${entry.title}» al chat con tu compañero para comentarla. ¿Continuar?`);
+      if (!confirmed) return;
+    }
+    const prompt = `Quiero comentar contigo esta entrada de mi diario. Ayúdame a reflexionar sobre ella y escucha antes de dar consejos.\n\nTítulo: ${entry.title}\nCategoría: ${entry.category}\nContenido:\n${entry.content}`;
+    openChatSection('chat');
+    chatEls.input.value = prompt; resizeChatInput();
+    const sendPromise = sendChatMessage(prompt);
+    chatEls.input.value = ''; resizeChatInput();
+    await sendPromise;
+  }
+
+  summaryButton.addEventListener('click', async () => {
+    if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayEntries = entries.filter((entry) => new Date(entry.created_at).getTime() >= today.getTime());
+    if (!todayEntries.length) { showChatToast('Todavía no hay entradas de hoy que resumir.'); return; }
+    if (!window.confirm('Se enviará a la IA el contenido de las entradas de hoy que has guardado en el diario para preparar un resumen. ¿Continuar?')) return;
+    summaryButton.disabled = true; summaryButton.textContent = 'Preparando…';
+    try {
+      const source = todayEntries.map((entry) => `- ${entry.title}: ${entry.content}`).join('\n');
+      const result = await callStandaloneAI({ mode: 'journal_draft', messages: [{ role: 'user', content: `Prepara un resumen diario fiel y claro a partir de estas entradas. No inventes nada. Devuelve solo el resumen.\n\n${source}` }] });
+      openEditor(); titleInput.value = `Resumen del día · ${new Date().toLocaleDateString('es-ES')}`; categorySelect.value = 'Recuerdos'; contentArea.value = result.reply; visibilitySelect.value = 'private';
+      showChatToast('Resumen preparado como borrador; revísalo y guárdalo cuando quieras.');
+    } catch (error) { showChatToast(error.message || 'No se pudo preparar el resumen.', { important: true }); }
+    finally { summaryButton.disabled = false; summaryButton.textContent = 'Preparar resumen de hoy'; }
+  });
+
+  exportButton.addEventListener('click', () => {
+    if (!entries.length) { showChatToast('Tu diario todavía está vacío.'); return; }
+    const text = entries.map((entry) => `# ${entry.title}\nFecha: ${new Date(entry.created_at).toLocaleDateString('es-ES')}\nCategoría: ${entry.category}\nPrivacidad: ${entry.visibility === 'companion' ? 'Compartida' : 'Privada'}\n\n${entry.content}\n\n---\n`).join('\n');
+    downloadTextFile('mi-diario-santitosia.md', text);
+  });
+
+  draftButton.addEventListener('click', async () => {
+    const source = contentArea.value.trim();
+    if (!source) { showChatToast('Escribe primero algunas ideas para que la IA las redacte.'); contentArea.focus(); return; }
+    if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
+    draftButton.disabled = true; draftButton.textContent = 'Redactando…';
+    try {
+      const result = await callStandaloneAI({ mode: 'journal_draft', messages: [{ role: 'user', content: `Convierte estas notas en una entrada de diario natural y fiel. No inventes hechos ni emociones. Conserva la intención y el tono original.\n\n${source}` }] });
+      contentArea.value = result.reply; showChatToast('Borrador preparado. Revísalo antes de guardarlo.');
+    } catch (error) { showChatToast(error.message || 'No se pudo redactar la entrada.', { important: true }); }
+    finally { draftButton.disabled = false; draftButton.textContent = 'Redactar con IA'; }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const title = titleInput.value.trim(); const content = contentArea.value.trim();
+    if (!title || !content) { showChatToast('Escribe un título y el contenido de la entrada.'); return; }
+    if (content.length > 20000) { showChatToast('La entrada no puede superar los 20 000 caracteres.'); return; }
+    saveButton.disabled = true; saveButton.textContent = 'Guardando…';
+    const values = { title: title.slice(0,160), content, category: categorySelect.value, visibility: visibilitySelect.value };
+    const result = editingId
+      ? await sb.from('journal_entries').update(values).eq('id', editingId).eq('user_id', chatUserId)
+      : await sb.from('journal_entries').insert({ ...values, user_id: chatUserId });
+    saveButton.disabled = false; saveButton.textContent = editingId ? 'Guardar cambios' : 'Guardar entrada';
+    if (result.error) { showChatToast('No se pudo guardar la entrada. Comprueba la configuración del diario en Supabase.', { important: true }); return; }
+    showChatToast(editingId ? 'Entrada actualizada.' : 'Entrada guardada.'); form.hidden = true; editingId = null; await loadEntries();
+  });
+  loadEntries();
+}
+
+function renderCompanionPanel(panel, kicker, heading, description) {
+  kicker.textContent = 'PERSONALIZA TU COMPAÑERO'; heading.textContent = 'Tu compañero virtual';
+  description.textContent = 'Elige con quién conversas y cómo se presenta. Cambiar su forma no cambia su personalidad ni el historial.';
+  const prefs = getCompanionPrefs();
+  const card = document.createElement('div'); card.className = 'settings-card companion-settings-card';
+  const preview = document.createElement('div'); preview.className = 'companion-preview';
+  const avatar = document.createElement('div'); avatar.className = `companion-preview-avatar companion-avatar-${getCharacterInfo(prefs.character).color}`;
+  const name = document.createElement('strong'); name.className = 'companion-preview-name';
+  const detail = document.createElement('p'); detail.className = 'settings-hint';
+  const charSelect = document.createElement('select'); charSelect.className = 'settings-model-select';
+  [['santitos','Santitos — maduro, sincero y sarcástico'],['jr','Santitos Jr. — joven, expresivo y sentimental'],['syntia','Syntia — ingeniosa, cercana y con carácter']].forEach(([value,label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; charSelect.append(option);
+  });
+  charSelect.value = prefs.character;
+  const appearanceSelect = document.createElement('select'); appearanceSelect.className = 'settings-model-select';
+  [['human','Forma humana'],['wolf','Forma de lobo']].forEach(([value,label]) => { const option = document.createElement('option'); option.value=value; option.textContent=label; appearanceSelect.append(option); });
+  appearanceSelect.value = prefs.appearance;
+  const voiceSelect = document.createElement('select'); voiceSelect.className = 'settings-model-select';
+  const updateVoiceList = () => {
+    const previous = getCompanionPrefs().voiceURI;
+    voiceSelect.replaceChildren();
+    const auto = document.createElement('option'); auto.value = ''; auto.textContent = 'Voz en español predeterminada'; voiceSelect.append(auto);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices().filter((voice) => /^es(-|_)/i.test(voice.lang)).forEach((voice) => {
+        const option = document.createElement('option'); option.value=voice.voiceURI; option.textContent=`${voice.name} (${voice.lang})`; voiceSelect.append(option);
+      });
+    }
+    voiceSelect.value = Array.from(voiceSelect.options).some((option) => option.value === previous) ? previous : '';
+  };
+  updateVoiceList();
+  if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = updateVoiceList;
+  const autoRow = document.createElement('label'); autoRow.className = 'companion-voice-toggle';
+  const autoCheckbox = document.createElement('input'); autoCheckbox.type = 'checkbox'; autoCheckbox.checked = prefs.autoVoice;
+  const autoText = document.createElement('span'); autoText.textContent = 'Reproducir automáticamente las respuestas';
+  autoRow.append(autoCheckbox, autoText);
+  const voiceHelp = document.createElement('p'); voiceHelp.className = 'settings-hint'; voiceHelp.textContent = 'La voz usa el sintetizador del navegador o dispositivo, por lo que la calidad y las voces disponibles pueden variar.';
+  const refreshPreview = () => {
+    const current = getCompanionPrefs(); const info = getCharacterInfo(current.character);
+    name.textContent = info.name;
+    detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : 'Forma humana'} · ${info.name === 'Santitos' ? 'maduro, sincero y sarcástico' : info.name === 'Syntia' ? 'ingeniosa, cercana y con carácter' : 'joven, expresivo y sentimental'}`;
+    avatar.className = `companion-preview-avatar companion-avatar-${info.color}`;
+    avatar.replaceChildren();
+    const img = document.createElement('img');
+    img.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, current.character) ? current.character : 'jr'}.svg`;
+    img.alt = ''; avatar.append(img);
+  };
+  charSelect.addEventListener('change', () => { saveCompanionPrefs({ character: charSelect.value }); refreshPreview(); });
+  appearanceSelect.addEventListener('change', () => { saveCompanionPrefs({ appearance: appearanceSelect.value }); refreshPreview(); });
+  autoCheckbox.addEventListener('change', () => saveCompanionPrefs({ autoVoice: autoCheckbox.checked }));
+  voiceSelect.addEventListener('change', () => saveCompanionPrefs({ voiceURI: voiceSelect.value }));
+  const testRow = document.createElement('div'); testRow.className = 'settings-actions';
+  const testVoice = document.createElement('button'); testVoice.type='button'; testVoice.className='panel-tool-btn'; testVoice.textContent='Probar voz';
+  testVoice.addEventListener('click', () => speakText(`Hola, soy ${getCharacterInfo(getCompanionPrefs().character).name}. Esta es mi voz. ¿Qué te apetece hacer hoy?`));
+  const stopVoice = document.createElement('button'); stopVoice.type='button'; stopVoice.className='panel-tool-btn'; stopVoice.textContent='Detener voz'; stopVoice.addEventListener('click', stopSpeaking);
+  testRow.append(testVoice, stopVoice);
+  card.append(preview, makeFieldLabel('Personalidad', charSelect), makeFieldLabel('Apariencia', appearanceSelect), makeFieldLabel('Voz', voiceSelect), autoRow, voiceHelp, testRow);
+  panel.append(kicker, heading, description, card);
+  refreshPreview();
 }
 
 function showPanel(section) {
@@ -1060,7 +1510,7 @@ function showPanel(section) {
     }
   } else if (section === 'files') {
     kicker.textContent = 'DOCUMENTOS E IMÁGENES'; heading.textContent = 'Tus archivos';
-    description.textContent = 'Archivos que has adjuntado en tus conversaciones de este navegador. En vista previa no se procesan con IA.';
+    description.textContent = 'Archivos adjuntados en tus conversaciones de este navegador. Los archivos de texto compatibles y las imágenes pequeñas se procesan al enviarlos en el chat; los ZIP no se extraen automáticamente.';
     const action = document.createElement('button');
     action.type = 'button';
     action.className = 'new-chat-button';
@@ -1086,6 +1536,10 @@ function showPanel(section) {
       });
     }
     panel.append(kicker, heading, description, action, list);
+  } else if (section === 'diary') {
+    renderDiaryPanel(panel, kicker, heading, description);
+  } else if (section === 'companion') {
+    renderCompanionPanel(panel, kicker, heading, description);
   } else if (section === 'settings') {
     kicker.textContent = 'PERSONALIZA TU EXPERIENCIA';
     heading.textContent = 'Configuración';
@@ -1364,7 +1818,7 @@ function safeSave(key, value) { try { window.localStorage.setItem(key, value); }
 function closeChatSidebar() { if (chatEls.app) chatEls.app.classList.remove('sidebar-open'); }
 function openChatSection(section) {
   closeChatSidebar();
-  const routes = { chat: 'chat', history: 'history', files: 'Files', settings: 'Configuration', profile: 'Profile', support: 'Support' };
+  const routes = { chat: 'chat', history: 'history', files: 'Files', diary: 'diary', companion: 'companion', settings: 'Configuration', profile: 'Profile', support: 'Support' };
   const route = routes[section] || 'chat';
   const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
@@ -1380,6 +1834,9 @@ function openChatSection(section) {
 }
 function startNewChat() {
   activeChatId = null; selectedAttachments = []; renderAttachmentPreview();
+  if (window.location.pathname.replace(/\/+$/, '').toLowerCase() !== '/santitosia/chat' || window.location.hash) {
+    window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+  }
   chatEls.input.value = ''; resizeChatInput();
   showChatWelcome(); renderRecentChats(); chatEls.input.focus(); closeChatSidebar();
 }
@@ -1388,53 +1845,39 @@ function resizeChatInput() {
   chatEls.input.style.height = 'auto';
   chatEls.input.style.height = `${Math.min(chatEls.input.scrollHeight, 180)}px`;
 }
-function sendChatMessage(text) {
+async function sendChatMessage(text) {
   const content = String(text || '').trim();
-  if (!content && !selectedAttachments.length) return;
+  if ((!content && !selectedAttachments.length) || aiRequestInProgress) return;
   if (!chatUserId) { showLandingView(); openAuth('login'); return; }
-  // User text and attachment names stay local in this UI preview; no AI service is called.
+  const filesToSend = [...selectedAttachments];
+  const attached = filesToSend.map((file) => ({ name: file.name, type: file.type || 'application/octet-stream', size: file.size || 0 }));
   if (!activeSession()) {
     const firstLine = content.split(/\r?\n/)[0].trim();
-    const title = firstLine ? (firstLine.length > 42 ? firstLine.slice(0, 39) + '…' : firstLine) : (selectedAttachments[0] && selectedAttachments[0].name) || 'Nuevo chat';
+    const title = firstLine ? (firstLine.length > 42 ? firstLine.slice(0, 39) + '…' : firstLine) : (attached[0] && attached[0].name) || 'Nuevo chat';
     const session = { id: makeId(), title, createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
     chatSessions.unshift(session); activeChatId = session.id;
   }
   const session = activeSession();
   if (!session) return;
-  const attached = selectedAttachments.map((file) => ({ name: file.name, type: file.type || 'application/octet-stream', size: file.size || 0 }));
-  const userMessage = { role: 'user', content: content || 'He adjuntado archivos.', timestamp: Date.now(), attachments: attached };
+  const userMessage = { role: 'user', content: content || 'Analiza los archivos que he adjuntado.', timestamp: Date.now(), attachments: attached };
   session.messages.push(userMessage);
-  chatEls.welcome.hidden = true;
-  chatEls.messages.replaceChildren(...session.messages.slice(0, -1).map((item) => createMessageNode(item, true)));
-  addMessageToDOM(userMessage);
-  const hasFiles = attached.length > 0;
-  const modelName = chatEls.model && chatEls.model.value === 'pro' ? 'Santitos' : 'Santitos Jr';
-  const assistantMessage = {
-    role: 'assistant', timestamp: Date.now() + 1,
-    content: hasFiles
-      ? `He recibido tu mensaje y ${attached.length === 1 ? 'el archivo' : 'los archivos'} en modo vista previa. Cuando ${modelName} esté conectado, podré leer el contenido y responderte con detalle.`
-      : `He guardado tu mensaje en este dispositivo. ${modelName} todavía no está conectado a un modelo de IA, así que esta respuesta es solo de demostración. Pronto verás aquí respuestas reales.`,
-    previewNote: hasFiles
-      ? 'Vista previa: se muestran los nombres de archivo, pero el contenido no se analiza todavía.'
-      : 'Vista previa: tu conversación se guarda en el navegador hasta conectar el modelo.'
-  };
-  session.messages.push(assistantMessage); session.updatedAt = Date.now();
-  selectedAttachments = []; renderAttachmentPreview();
-  showTypingIndicator();
-  window.setTimeout(() => {
-    if (activeChatId !== session.id || activeChatSection !== 'chat') { removeTypingIndicator(); return; }
-    removeTypingIndicator();
-    addMessageToDOM(assistantMessage);
-    scrollChatToBottom(true);
-  }, 700 + Math.min(900, (content || '').length * 8));
-  saveChatSessions(); renderRecentChats();
-  if (activeChatSection !== 'chat') renderConversation(session.id);
+  session.updatedAt = Date.now();
+  if (chatEls.welcome) { chatEls.welcome.hidden = true; chatEls.welcome.setAttribute('aria-hidden', 'true'); }
+  if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
+  selectedAttachments = [];
+  renderAttachmentPreview();
+  saveChatSessions();
+  renderRecentChats();
+  if (activeChatSection !== 'chat') openChatSection('chat');
+  else renderConversation(session.id);
+  await generateReplyForSession(session, { files: filesToSend });
 }
 
 // Workspace event bindings
 if (chatEls.form) {
   chatEls.form.addEventListener('submit', (event) => {
     event.preventDefault();
+    if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
     const text = chatEls.input.value;
     chatEls.input.value = ''; resizeChatInput();
     sendChatMessage(text);
@@ -1453,12 +1896,21 @@ if (chatEls.fileInput) {
     const files = Array.from(chatEls.fileInput.files || []);
     const available = Math.max(0, 8 - selectedAttachments.length);
     selectedAttachments.push(...files.slice(0, available));
-    if (files.length > available) showChatToast('Puedes seleccionar hasta 8 archivos por mensaje en esta vista previa.');
-    renderAttachmentPreview(); chatEls.fileInput.value = '';
+    if (files.length > available) showChatToast('Puedes seleccionar hasta 8 archivos por mensaje.');
+    renderAttachmentPreview(); chatEls.fileInput.value = ''; chatEls.fileInput.accept = ALL_ATTACHMENT_TYPES;
   });
 }
-document.getElementById('attachFileBtn')?.addEventListener('click', () => chatEls.fileInput.click());
-document.getElementById('imageFileBtn')?.addEventListener('click', () => { chatEls.fileInput.accept = 'image/*'; chatEls.fileInput.click(); chatEls.fileInput.accept = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip'; });
+const ALL_ATTACHMENT_TYPES = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip,.toml,.sql,.csv,.gradle,.kt,.ts,.tsx,.jsx,.ini,.conf,.cfg';
+document.getElementById('attachFileBtn')?.addEventListener('click', () => {
+  if (!chatEls.fileInput) return;
+  chatEls.fileInput.accept = ALL_ATTACHMENT_TYPES;
+  chatEls.fileInput.click();
+});
+document.getElementById('imageFileBtn')?.addEventListener('click', () => {
+  if (!chatEls.fileInput) return;
+  chatEls.fileInput.accept = 'image/*';
+  chatEls.fileInput.click();
+});
 document.getElementById('newChatBtn')?.addEventListener('click', startNewChat);
 document.getElementById('chatBrandHome')?.addEventListener('click', (event) => { event.preventDefault(); window.location.hash = ''; showLandingView(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 document.getElementById('openChatSidebar')?.addEventListener('click', () => chatEls.app.classList.add('sidebar-open'));
@@ -1500,7 +1952,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeModelMenu();
 });
 chatEls.model?.addEventListener('change', () => {
-  if (chatEls.model.value === 'pro' && !hasPremiumPlan()) {
+  if (chatEls.model.value === 'pro' && (!PREMIUM_PLAN_ENABLED || !hasPremiumPlan())) {
     chatEls.model.value = 'jr';
     updatePlanCard();
     requirePremiumOrCheckout();
@@ -1510,9 +1962,9 @@ chatEls.model?.addEventListener('change', () => {
   updatePlanCard();
 });
 document.getElementById('webSearchBtn')?.addEventListener('click', (event) => {
-  webSearchEnabled = !webSearchEnabled;
-  event.currentTarget.setAttribute('aria-pressed', String(webSearchEnabled));
-  showChatToast(webSearchEnabled ? 'Búsqueda web activada visualmente; falta conectar la herramienta.' : 'Búsqueda web desactivada.');
+  webSearchEnabled = false;
+  event.currentTarget.setAttribute('aria-pressed', 'false');
+  showChatToast('La búsqueda web real todavía no está conectada. La IA no fingirá haber consultado internet.');
 });
 document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !chatEls.app.hidden) { event.preventDefault(); startNewChat(); }
@@ -1530,6 +1982,8 @@ function routeFromLocation() {
   if (path.endsWith('/history')) return 'history';
   if (path.endsWith('/configuration')) return 'settings';
   if (path.endsWith('/files')) return 'files';
+  if (path.endsWith('/diary') || path.endsWith('/diario')) return 'diary';
+  if (path.endsWith('/companion') || path.endsWith('/companero')) return 'companion';
   if (path.endsWith('/profile')) return 'profile';
   if (path.endsWith('/support')) return 'support';
   return 'home';
@@ -1540,9 +1994,8 @@ window.addEventListener('popstate', async () => {
   const { data } = await sb.auth.getSession();
   const user = data && data.session && data.session.user;
   if (!user) { showLandingView(); openAuth('login'); return; }
-  setUser(user); showChatView();
-  if (route === 'chat') openChatSection('chat');
-  else showPanel(route);
+  // setUser ya abre la sección correspondiente a la ruta actual.
+  setUser(user);
 });
 
 // Compatibilidad con enlaces antiguos que aún usen #chat.
@@ -1642,9 +2095,13 @@ function loadPayPalSdk() {
 }
 
 function activatePremiumLocally() {
+  if (!PREMIUM_PLAN_ENABLED) {
+    showChatToast('Premium todavía no está disponible; no se ha activado ninguna suscripción.', { important: true });
+    return;
+  }
   safeSave(planStorageKey(), 'pro');
   if (chatEls.model) setModelValue('pro', { skipPaywall: true });
-  showChatToast('Premium activado. ¡Gracias por tu pago!');
+  showChatToast('Premium activado.');
 }
 
 function renderPayPalButtons() {
@@ -1723,6 +2180,8 @@ function openCheckout(plan) {
   const title = document.getElementById('checkoutPlanName');
   const price = document.getElementById('checkoutPlanPrice');
   const note = document.getElementById('checkoutNote');
+  const eyebrow = modal.querySelector('.eyebrow');
+  if (eyebrow) eyebrow.textContent = isPro && !PREMIUM_PLAN_ENABLED ? 'PRÓXIMAMENTE' : (isPro ? 'PAGO' : 'PLAN GRATUITO');
   const host = document.getElementById('paypalButtons');
   const fallback = document.getElementById('checkoutConfirm');
 
@@ -1737,6 +2196,18 @@ function openCheckout(plan) {
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+
+  if (isPro && !PREMIUM_PLAN_ENABLED) {
+    if (host) host.replaceChildren();
+    if (fallback) { fallback.hidden = false; fallback.disabled = true; fallback.textContent = 'Próximamente'; }
+    if (note) note.textContent = 'Santitos Premium estará disponible cuando la IA premium y la activación segura de la suscripción estén conectadas. Esta versión no realizará ningún cobro.';
+    const hint = document.getElementById('checkoutPayPalHint');
+    if (hint) hint.hidden = true;
+    return;
+  }
+  if (fallback) fallback.disabled = false;
+  const hint = document.getElementById('checkoutPayPalHint');
+  if (hint) hint.hidden = true;
 
   if (!isPro) {
     if (host) host.innerHTML = '';
@@ -1776,6 +2247,10 @@ document.addEventListener('click', (e) => {
 document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
   const modal = document.getElementById('checkoutModal');
   const plan = modal?.dataset.plan || 'pro';
+  if (plan === 'pro' && !PREMIUM_PLAN_ENABLED) {
+    showChatToast('Premium todavía no está disponible y no se realizará ningún cobro.');
+    return;
+  }
   if (plan === 'jr') {
     closeCheckout();
     if (!currentAuthUser) openAuth('register');

@@ -107,6 +107,8 @@
         <button class="chat-nav-item active" type="button" data-chat-nav="chat"><span class="nav-glyph">◉</span> Chat</button>
         <button class="chat-nav-item" type="button" data-chat-nav="history"><span class="nav-glyph">◷</span> Historial</button>
         <button class="chat-nav-item" type="button" data-chat-nav="files"><span class="nav-glyph">▤</span> Archivos</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="diary"><span class="nav-glyph">▧</span> Mi diario</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="companion"><span class="nav-glyph">✧</span> Compañero</button>
         <button class="chat-nav-item" type="button" data-chat-nav="settings"><span class="nav-glyph">⚙</span> Configuración</button>
       </nav>
       <div class="sidebar-section-label">RECIENTES</div>
@@ -159,9 +161,9 @@
                 <span class="model-option-icon">✧</span>
                 <span class="model-option-text">
                   <strong>Santitos</strong>
-                  <small>Razonamiento avanzado</small>
+                  <small>Modelo avanzado · Próximamente</small>
                 </span>
-                <span class="model-option-badge pro">Premium</span>
+                <span class="model-option-badge pro">Próximamente</span>
               </button>
             </div>
             <select id="modelSelect" hidden aria-hidden="true">
@@ -192,7 +194,7 @@
       </main>
 
       <footer class="chat-composer-area">
-        <div class="preview-notice" id="previewNotice"><span>ⓘ</span> Modo vista previa: las respuestas son de demostración hasta conectar el modelo de IA.</div>
+        <div class="preview-notice" id="previewNotice"><span>ⓘ</span> El modelo gratuito puede tener límites de disponibilidad. No compartas contraseñas ni datos sensibles.</div>
         <div class="attachment-preview" id="attachmentPreview" hidden></div>
         <form class="chat-composer" id="chatForm">
           <input type="file" id="chatFileInput" hidden multiple accept="image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip">
@@ -230,8 +232,8 @@
         </div>
         <div class="floating-card card-top">
           <span class="mini-icon purple">✦</span>
-          <span><b>Razonamiento avanzado</b><small>Cuando necesitas profundizar</small></span>
-          <span class="live-pill">PRO</span>
+          <span><b>Compañeros virtuales</b><small>Elige personalidad y apariencia</small></span>
+          <span class="live-pill">IA</span>
         </div>
         <div class="floating-card card-bottom">
           <span class="mini-icon cyan">↯</span>
@@ -245,7 +247,7 @@
       <div class="section-heading">
         <div>
           <div class="eyebrow">DOS FORMAS DE AYUDARTE</div>
-          <h2>Elige tu <span class="gradient-text">modelo.</span></h2>
+          <h2>Elige tu forma de <span class="gradient-text">conversar.</span></h2>
         </div>
       </div>
       <div class="model-grid">
@@ -255,7 +257,7 @@
             <span class="tag tag-free">GRATIS</span>
           </div>
           <h3>Santitos Jr</h3>
-          <p class="model-tagline">Rápido, cercano y siempre listo.</p>
+          <p class="model-tagline">Gratis, cercano y con límite diario.</p>
           <p>Ideal para preguntas cotidianas, videojuegos, recomendaciones, explicaciones y traducciones breves.</p>
           <ul>
             <li><span>✓</span> Consultas del día a día</li>
@@ -267,22 +269,22 @@
         <article class="model-card pro-card">
           <div class="model-top">
             <div class="model-symbol pro-symbol">✧</div>
-            <span class="tag tag-pro">PREMIUM</span>
+            <span class="tag tag-pro">PRÓXIMAMENTE</span>
           </div>
           <h3>Santitos</h3>
-          <p class="model-tagline">Más profundidad. Más herramientas.</p>
-          <p>Para tareas complejas que necesitan un análisis más completo y herramientas adicionales.</p>
+          <p class="model-tagline">La experiencia avanzada está en preparación.</p>
+          <p>El plan de pago se activará cuando el modelo avanzado y la gestión segura de suscripciones estén listos.</p>
           <ul>
-            <li><span>✓</span> Razonamiento avanzado</li>
-            <li><span>✓</span> Búsqueda web</li>
-            <li><span>✓</span> Subida y análisis de archivos e imágenes</li>
-            <li><span>✓</span> Traducción de plugins de Minecraft</li>
+            <li><span>•</span> Modelo avanzado (pendiente)</li>
+            <li><span>•</span> Búsqueda web (pendiente)</li>
+            <li><span>•</span> Funciones adicionales en preparación</li>
+            <li><span>•</span> Plan y límites por definir</li>
           </ul>
           <div class="price-line"><strong>3 €</strong><span>/ mes · precio previsto</span></div>
-          <button class="btn btn-primary full-width" data-open-checkout="pro">Suscribirse · 3 €/mes <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="btn btn-primary full-width" data-open-checkout="pro">Próximamente · 3 €/mes <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </article>
       </div>
-      <p class="fine-print">Puedes revisar el detalle de planes en la sección de precios. Premium se paga con PayPal.</p>
+      <p class="fine-print">El chat gratuito está disponible con límite diario. Premium todavía no acepta pagos.</p>
     </section>
 
     <section class="pricing-page section-wrap" id="precios">
@@ -290,7 +292,7 @@
         <div class="eyebrow">PLANES SENCILLOS</div>
         <h2>Precios <span class="gradient-text">claros.</span></h2>
         <p>Empieza gratis con Santitos Jr.</p>
-        <p class="section-subline">Pasa a Premium cuando necesites más profundidad y herramientas.</p>
+        <p class="section-subline">El plan Premium llegará cuando el modelo y la suscripción estén conectados de forma segura.</p>
       </div>
       <div class="pricing-table">
         <article class="price-card">
@@ -299,10 +301,10 @@
             <div class="price-card-amount"><strong>0 $</strong><span>/ mes</span></div>
           </div>
           <ul>
-            <li><span>✓</span> Chat diario</li>
-            <li><span>✓</span> Respuestas rápidas</li>
-            <li><span>✓</span> Historial en el navegador</li>
-            <li><span>✓</span> Ideal para empezar</li>
+            <li><span>✓</span> 5 peticiones de IA al día</li>
+            <li><span>✓</span> Santitos, Santitos Jr. y Syntia</li>
+            <li><span>✓</span> Diario privado con ayuda opcional de IA</li>
+            <li><span>✓</span> Historial guardado en este navegador</li>
           </ul>
           <button class="btn btn-outline full-width" data-open-checkout="jr">Empezar gratis</button>
         </article>
@@ -313,15 +315,15 @@
             <div class="price-card-amount"><strong>3 €</strong><span>/ mes</span></div>
           </div>
           <ul>
-            <li><span>✓</span> Razonamiento avanzado</li>
-            <li><span>✓</span> Búsqueda web</li>
-            <li><span>✓</span> Archivos e imágenes</li>
-            <li><span>✓</span> Prioridad en nuevas funciones</li>
+            <li><span>•</span> Modelo avanzado (pendiente)</li>
+            <li><span>•</span> Búsqueda web (pendiente)</li>
+            <li><span>•</span> Funciones adicionales en preparación</li>
+            <li><span>•</span> Detalles por confirmar</li>
           </ul>
-          <button class="btn btn-primary full-width" data-open-checkout="pro">Ir al checkout</button>
+          <button class="btn btn-primary full-width" data-open-checkout="pro">Próximamente</button>
         </article>
       </div>
-      <p class="fine-print centered-print">Los precios son previstos. El pago de Premium se realiza con PayPal.</p>
+      <p class="fine-print centered-print">Los 3 €/mes son un precio previsto. Esta versión no procesa pagos ni activa suscripciones.</p>
     </section>
 
     <section class="features-section section-wrap" id="funciones">
@@ -337,19 +339,19 @@
           <p>Retoma tus conversaciones y mantén tus ideas organizadas en tu cuenta.</p>
         </article>
         <article class="feature-card">
-          <span class="feature-icon cyan">⌕</span>
-          <h3>Busca y descubre</h3>
-          <p>Consulta información actualizada en la web cuando uses las herramientas compatibles.</p>
+          <span class="feature-icon cyan">✧</span>
+          <h3>Tu compañero, a tu manera</h3>
+          <p>Elige entre Santitos, Santitos Jr. y Syntia, y cambia entre la forma humana y la de lobo.</p>
         </article>
         <article class="feature-card">
           <span class="feature-icon pink">▤</span>
           <h3>Archivos y traducciones</h3>
-          <p>Trabaja con documentos y código, incluidos plugins de Minecraft.</p>
+          <p>Envía archivos de texto compatibles e imágenes pequeñas para analizarlos y traducir código, incluidos plugins de Minecraft.</p>
         </article>
         <article class="feature-card">
-          <span class="feature-icon blue">◈</span>
-          <h3>Web y Windows</h3>
-          <p>Diseñada para crecer hacia una aplicación de escritorio con una experiencia coherente.</p>
+          <span class="feature-icon blue">♡</span>
+          <h3>Diario personal</h3>
+          <p>Escribe tus propias entradas o pide a la IA que prepare un borrador. Tú decides qué compartes y qué mantienes privado.</p>
         </article>
       </div>
     </section>
@@ -410,7 +412,7 @@
       </div>
       <div id="paypalButtons" class="paypal-buttons-host"></div>
       <button class="btn btn-primary full-width paypal-fallback-btn" type="button" id="checkoutConfirm" hidden>Continuar con el pago</button>
-      <p class="demo-note" id="checkoutPayPalHint">El pago se procesa de forma segura. No almacenamos datos de tu tarjeta.</p>
+      <p class="demo-note" id="checkoutPayPalHint">Premium todavía no está disponible para compra.</p>
     </section>
   </div>
 
