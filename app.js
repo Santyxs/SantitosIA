@@ -784,11 +784,7 @@ function showTypingIndicator() {
   row.setAttribute('aria-label', 'SantitosIA está escribiendo');
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
-  const typingPrefs = getCompanionPrefs();
-  const typingAvatarUrl = getCharacterImagePath(typingPrefs.character, 'pensando', typingPrefs.appearance);
-  avatar.innerHTML = assistantAvatarMarkup(typingPrefs.character, typingPrefs.appearance, 'pensando');
-  avatar.classList.add('is-thinking');
-  avatar.classList.add(`companion-avatar-${getCharacterInfo(getCompanionPrefs().character).color}`);
+  avatar.style.display = 'none'; // small circular avatars disabled
   const body = document.createElement('div');
   body.className = 'message-body';
   const bubble = document.createElement('div');
@@ -855,25 +851,8 @@ function createMessageNode(item, addActions) {
   const avatar = document.createElement('div');
   avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
   if (role === 'assistant') {
-    const prefs = getCompanionPrefs();
-    const characterId = item.character || prefs.character;
-    const appearance = item.appearance || prefs.appearance;
-    const info = getCharacterInfo(characterId);
-    avatar.classList.add(`companion-avatar-${info.color}`);
-    // Choose expression: sonrisa for positive/short replies, hablando otherwise
-    let expression = 'hablando';
-    const content = String(item.content || '');
-    if (content.length < 80 || /[😀😊😄🙂¡!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
-      expression = 'sonrisa';
-    }
-    const avatarUrl = getCharacterImagePath(characterId, expression, appearance);
-    const image = document.createElement('img');
-    image.src = avatarUrl;
-    image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
-    image.className = 'companion-face';
-    image.dataset.expression = expression;
-    image.onerror = function() { this.onerror = null; this.src = 'assets/logo.png'; };
-    avatar.append(image);
+    // Small circular avatars disabled by user request
+    avatar.style.display = 'none';
   } else {
     const custom = getCustomUserAvatar();
     if (custom) {
