@@ -1623,3 +1623,89 @@ body.chat-compact .chat-stage{padding-top:18px}
 /* Icono del diario: mismo estilo lineal que los demás iconos de navegación */
 .chat-nav-item .nav-glyph-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 21px;width:21px;height:21px;font-size:inherit;line-height:1}
 .chat-nav-item .nav-glyph-icon svg{display:block;width:19px;height:19px;stroke:currentColor}
+
+
+/* Avatar: una sola imagen de fondo, únicamente dentro del chat */
+.chat-messages {
+  position: relative !important;
+  background-image: var(--chat-companion-image) !important;
+  background-repeat: no-repeat !important;
+  background-position: center 35% !important;
+  background-size: min(52vw, 460px) auto !important;
+  background-attachment: scroll !important;
+}
+.chat-message.assistant-message .message-avatar,
+.chat-message.assistant-message.typing-row .message-avatar {
+  display: none !important;
+}
+.chat-message.assistant-message {
+  min-height: 0 !important;
+  padding: 12px 0 !important;
+  align-items: flex-start !important;
+}
+.chat-message.assistant-message .message-body,
+.chat-message.assistant-message.typing-row .message-body {
+  width: min(700px, 100%) !important;
+  max-width: min(700px, 100%) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.chat-message.assistant-message .message-bubble {
+  background: rgba(9, 15, 34, .48) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+@media (max-width: 640px) {
+  .chat-messages {
+    background-size: min(78vw, 330px) auto !important;
+    background-position: center 28% !important;
+  }
+}
+
+
+/* Ajuste final: mostrar el avatar completo, sin recortarlo por la altura de los mensajes */
+.chat-messages {
+  background-image: none !important;
+  position: relative !important;
+  isolation: isolate;
+}
+.chat-messages::before {
+  content: "";
+  position: fixed;
+  left: calc(50% + 125px);
+  top: 53%;
+  transform: translate(-50%, -50%);
+  width: min(48vw, 600px);
+  height: 74vh;
+  background-image: var(--chat-companion-image);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: .42;
+  pointer-events: none;
+  z-index: -1;
+}
+.chat-message.assistant-message .message-avatar,
+.chat-message.assistant-message.typing-row .message-avatar { display: none !important; }
+.chat-message.assistant-message .message-body,
+.chat-message.assistant-message.typing-row .message-body {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 900px) {
+  .chat-messages::before {
+    left: calc(50% + 85px);
+    width: min(62vw, 480px);
+    height: 62vh;
+    opacity: .30;
+  }
+}
+@media (max-width: 640px) {
+  .chat-messages::before {
+    left: 50%;
+    top: 48%;
+    width: 88vw;
+    height: 52vh;
+    opacity: .24;
+  }
+}

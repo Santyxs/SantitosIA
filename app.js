@@ -851,7 +851,7 @@ function createMessageNode(item, addActions) {
     const info = getCharacterInfo(characterId);
     avatar.classList.add(`companion-avatar-${info.color}`);
     const avatarUrl = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr'}.svg`;
-    if (chatEls.messages) chatEls.messages.style.setProperty('--chat-companion-image', `url("${avatarUrl}")`);
+
     const image = document.createElement('img');
     image.src = avatarUrl;
     image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
