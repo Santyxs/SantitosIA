@@ -774,7 +774,10 @@ function showTypingIndicator() {
   row.setAttribute('aria-label', 'SantitosIA está escribiendo');
   const avatar = document.createElement('div');
   avatar.className = 'message-avatar';
-  avatar.innerHTML = assistantAvatarMarkup(getCompanionPrefs().character, getCompanionPrefs().appearance);
+  const typingPrefs = getCompanionPrefs();
+  const typingAvatarUrl = typingPrefs.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, typingPrefs.character) ? typingPrefs.character : 'jr'}.svg`;
+  if (chatEls.messages) chatEls.messages.style.setProperty('--chat-companion-image', `url("${typingAvatarUrl}")`);
+  avatar.innerHTML = assistantAvatarMarkup(typingPrefs.character, typingPrefs.appearance);
   avatar.classList.add(`companion-avatar-${getCharacterInfo(getCompanionPrefs().character).color}`);
   const body = document.createElement('div');
   body.className = 'message-body';
@@ -847,8 +850,10 @@ function createMessageNode(item, addActions) {
     const appearance = item.appearance || prefs.appearance;
     const info = getCharacterInfo(characterId);
     avatar.classList.add(`companion-avatar-${info.color}`);
+    const avatarUrl = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr'}.svg`;
+    if (chatEls.messages) chatEls.messages.style.setProperty('--chat-companion-image', `url("${avatarUrl}")`);
     const image = document.createElement('img');
-    image.src = appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, characterId) ? characterId : 'jr'}.svg`;
+    image.src = avatarUrl;
     image.alt = `Avatar de ${info.name}${appearance === 'wolf' ? ' en forma de lobo' : ''}`;
     avatar.append(image);
   } else {

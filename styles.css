@@ -1581,3 +1581,41 @@ body.chat-compact .chat-stage{padding-top:18px}
   box-shadow:none!important;
   background:transparent!important;
 }
+
+
+/* Fondo unico del personaje: nunca repetir un avatar en cada respuesta */
+.chat-messages{
+  position:relative!important;
+  background-image:var(--chat-companion-image)!important;
+  background-repeat:no-repeat!important;
+  background-position:center center!important;
+  background-size:min(76vw,520px) auto!important;
+  background-attachment:fixed!important;
+}
+.chat-message.assistant-message .message-avatar,
+.chat-message.assistant-message.typing-row .message-avatar{
+  display:none!important;
+}
+.chat-message.assistant-message{
+  min-height:0!important;
+  padding:12px 0!important;
+  align-items:flex-start!important;
+}
+.chat-message.assistant-message .message-body,
+.chat-message.assistant-message.typing-row .message-body{
+  width:min(700px,100%)!important;
+  max-width:min(700px,100%)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+.chat-message.assistant-message .message-bubble{
+  background:rgba(9,15,34,.48)!important;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+@media(max-width:640px){
+  .chat-messages{background-size:min(92vw,360px) auto!important;}
+  .chat-message.assistant-message{padding:9px 0!important;min-height:0!important;}
+  .chat-message.assistant-message .message-body,
+  .chat-message.assistant-message.typing-row .message-body{width:100%!important;max-width:100%!important;margin:0!important;}
+}
