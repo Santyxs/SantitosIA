@@ -1029,7 +1029,7 @@ body.chat-mode .chat-app{display:flex}
 .chat-messages{width:min(880px,100%);margin:0 auto;display:flex;flex-direction:column;gap:22px}.chat-messages:empty{display:none}
 .chat-message{display:flex;align-items:flex-start;gap:12px;animation:messageIn .22s ease both;min-width:0}.chat-message.user-message{justify-content:flex-end}.chat-message.assistant-message{justify-content:flex-start}
 @keyframes messageIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.message-avatar{width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(151,113,255,.55);background:linear-gradient(145deg,#10182d,#171333);overflow:hidden;margin-top:2px;box-shadow:0 0 0 2px rgba(80,113,223,.08),0 0 15px rgba(104,93,255,.13)}.message-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:50%}.message-avatar.user-avatar{border-color:rgba(103,179,235,.23);background:linear-gradient(145deg,#474bc0,#2367a7);font-size:12px;font-weight:700;color:#fff}
+.message-avatar{width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(151,113,255,.55);background:linear-gradient(145deg,#10182d,#171333);overflow:hidden;margin-top:2px;box-shadow:0 0 0 2px rgba(80,113,223,.08),0 0 15px rgba(104,93,255,.13)}.message-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%;image-rendering:-webkit-optimize-contrast}.message-avatar.user-avatar{border-color:rgba(103,179,235,.23);background:linear-gradient(145deg,#474bc0,#2367a7);font-size:12px;font-weight:700;color:#fff}
 .message-body{min-width:0;max-width:min(700px,90%)}.message-meta{display:flex;align-items:center;gap:9px;margin-bottom:7px;font-size:11px;font-weight:700;color:#d9dcf8}.message-meta time{font-size:9px;font-weight:400;color:#7783a6;margin-left:auto}.message-tag{font-size:8px;letter-spacing:.5px;padding:3px 6px;border-radius:5px;background:rgba(125,87,255,.16);border:1px solid rgba(146,111,255,.14);color:#b9a0ff;font-weight:800}
 .message-bubble{padding:14px 16px;border-radius:4px 15px 15px 15px;border:1px solid rgba(123,145,212,.15);background:linear-gradient(135deg,rgba(19,30,58,.94),rgba(14,23,44,.94));color:#d8def4;font-size:13px;line-height:1.8;overflow-wrap:anywhere;white-space:pre-wrap}
 .user-message .message-body{max-width:min(600px,88%)}.user-message .message-bubble{border-radius:15px 4px 15px 15px;border-color:rgba(131,117,255,.4);background:linear-gradient(120deg,#533bce,#304ed1 65%,#246aaf);color:white;box-shadow:0 8px 22px rgba(27,49,151,.15)}.user-message .message-meta{justify-content:flex-end;color:#dfe2ff}
@@ -1588,9 +1588,10 @@ body.chat-compact .chat-stage{padding-top:18px}
   position:relative!important;
   background-image:var(--chat-companion-image)!important;
   background-repeat:no-repeat!important;
-  background-position:center center!important;
-  background-size:min(76vw,520px) auto!important;
-  background-attachment:fixed!important;
+  background-position:center 30%!important;
+  background-size:min(42vw,380px) auto!important;
+  background-attachment:scroll!important;
+  /* keep the large portrait subtle so it doesn't overpower the chat */
 }
 .chat-message.assistant-message .message-avatar,
 .chat-message.assistant-message.typing-row .message-avatar{
@@ -1630,8 +1631,8 @@ body.chat-compact .chat-stage{padding-top:18px}
   position: relative !important;
   background-image: var(--chat-companion-image) !important;
   background-repeat: no-repeat !important;
-  background-position: center 35% !important;
-  background-size: min(52vw, 460px) auto !important;
+  background-position: center 28% !important;
+  background-size: min(38vw, 340px) auto !important;
   background-attachment: scroll !important;
 }
 .chat-message.assistant-message .message-avatar,
@@ -1675,14 +1676,15 @@ body.chat-compact .chat-stage{padding-top:18px}
   left: calc(50% + 125px);
   top: 53%;
   transform: translate(-50%, -50%);
-  width: min(48vw, 600px);
-  height: 74vh;
+  width: min(36vw, 420px);
+  height: 60vh;
   background-image: var(--chat-companion-image);
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  opacity: .42;
+  opacity: .28;
   pointer-events: none;
+  filter: saturate(1.05) brightness(0.95);
   z-index: -1;
 }
 .chat-message.assistant-message .message-avatar,
