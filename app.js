@@ -396,9 +396,9 @@ const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}
 // Se activa cuando exista un modelo Premium real y una verificación de pago del lado servidor.
 const PREMIUM_PLAN_ENABLED = false;
 const CHARACTER_INFO = {
-  santitos: { name: 'Santitos', initials: 'S', icon: '🐺', color: 'santitos' },
-  jr: { name: 'Santitos Jr.', initials: 'Jr', icon: '🐺', color: 'jr' },
-  syntia: { name: 'Syntia', initials: 'Sy', icon: '🐺', color: 'syntia' },
+  santitos: { name: 'SantitosIA', selectorName: 'SantitosIA · Masculino', description: 'Directo, maduro y con carácter', icon: '✦', color: 'santitos' },
+  jr: { name: 'Santitos Jr.', selectorName: 'Santitos Jr.', description: 'Joven, cercano y expresivo', icon: '✧', color: 'jr' },
+  syntia: { name: 'SantitosIA', selectorName: 'SantitosIA · Femenino', description: 'Ingeniosa, cercana y resolutiva', icon: '✦', color: 'syntia' },
 };
 function getCompanionPrefs() {
   let value = {};
@@ -1377,65 +1377,152 @@ function renderDiaryPanel(panel, kicker, heading, description) {
 }
 
 function renderCompanionPanel(panel, kicker, heading, description) {
-  kicker.textContent = 'PERSONALIZA TU COMPAÑERO'; heading.textContent = 'Tu compañero virtual';
-  description.textContent = 'Elige con quién conversas y cómo se presenta. Cambiar su forma no cambia su personalidad ni el historial.';
+  kicker.textContent = 'PERSONALIZA TU COMPAÑERO';
+  heading.textContent = 'Elige tu avatar';
+  description.textContent = 'Selecciona la apariencia de tu asistente. El avatar se mostrará junto a sus respuestas y puedes cambiarlo cuando quieras.';
+
   const prefs = getCompanionPrefs();
-  const card = document.createElement('div'); card.className = 'settings-card companion-settings-card';
-  const preview = document.createElement('div'); preview.className = 'companion-preview';
-  const avatar = document.createElement('div'); avatar.className = `companion-preview-avatar companion-avatar-${getCharacterInfo(prefs.character).color}`;
-  const name = document.createElement('strong'); name.className = 'companion-preview-name';
-  const detail = document.createElement('p'); detail.className = 'settings-hint';
-  const charSelect = document.createElement('select'); charSelect.className = 'settings-model-select';
-  [['santitos','Santitos — maduro, sincero y sarcástico'],['jr','Santitos Jr. — joven, expresivo y sentimental'],['syntia','Syntia — ingeniosa, cercana y con carácter']].forEach(([value,label]) => {
-    const option = document.createElement('option'); option.value = value; option.textContent = label; charSelect.append(option);
+  const card = document.createElement('div');
+  card.className = 'settings-card companion-settings-card';
+
+  const preview = document.createElement('div');
+  preview.className = 'companion-preview';
+  const avatar = document.createElement('div');
+  avatar.className = `companion-preview-avatar companion-avatar-${getCharacterInfo(prefs.character).color}`;
+  const previewCopy = document.createElement('div');
+  previewCopy.className = 'companion-preview-copy';
+  const name = document.createElement('strong');
+  name.className = 'companion-preview-name';
+  const detail = document.createElement('p');
+  detail.className = 'settings-hint';
+  const status = document.createElement('span');
+  status.className = 'companion-preview-status';
+  status.textContent = 'AVATAR SELECCIONADO';
+  previewCopy.append(name, detail, status);
+  preview.append(avatar, previewCopy);
+
+  const selectorHeading = document.createElement('div');
+  selectorHeading.className = 'companion-selector-heading';
+  const selectorTitle = document.createElement('strong');
+  selectorTitle.textContent = 'Tu asistente';
+  const selectorHelp = document.createElement('span');
+  selectorHelp.textContent = '3 avatares disponibles';
+  selectorHeading.append(selectorTitle, selectorHelp);
+
+  const characterGrid = document.createElement('div');
+  characterGrid.className = 'companion-character-grid';
+  const characterButtons = new Map();
+  const characterChoices = [
+    { id: 'santitos', label: 'SantitosIA', type: 'Masculino', detail: 'Directo y resolutivo' },
+    { id: 'syntia', label: 'SantitosIA', type: 'Femenino', detail: 'Cercana e ingeniosa' },
+    { id: 'jr', label: 'Santitos Jr.', type: 'Joven', detail: 'Expresivo y desenfadado' },
+  ];
+
+  const appearanceSelect = document.createElement('select');
+  appearanceSelect.className = 'settings-model-select';
+  appearanceSelect.setAttribute('aria-label', 'Apariencia del avatar');
+  [['human','Avatar humano'],['wolf','Forma de lobo']].forEach(([value,label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; appearanceSelect.append(option);
   });
-  charSelect.value = prefs.character;
-  const appearanceSelect = document.createElement('select'); appearanceSelect.className = 'settings-model-select';
-  [['human','Forma humana'],['wolf','Forma de lobo']].forEach(([value,label]) => { const option = document.createElement('option'); option.value=value; option.textContent=label; appearanceSelect.append(option); });
   appearanceSelect.value = prefs.appearance;
-  const voiceSelect = document.createElement('select'); voiceSelect.className = 'settings-model-select';
+
+  const voiceSelect = document.createElement('select');
+  voiceSelect.className = 'settings-model-select';
+  voiceSelect.setAttribute('aria-label', 'Voz del asistente');
   const updateVoiceList = () => {
     const previous = getCompanionPrefs().voiceURI;
     voiceSelect.replaceChildren();
     const auto = document.createElement('option'); auto.value = ''; auto.textContent = 'Voz en español predeterminada'; voiceSelect.append(auto);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices().filter((voice) => /^es(-|_)/i.test(voice.lang)).forEach((voice) => {
-        const option = document.createElement('option'); option.value=voice.voiceURI; option.textContent=`${voice.name} (${voice.lang})`; voiceSelect.append(option);
+        const option = document.createElement('option'); option.value = voice.voiceURI; option.textContent = `${voice.name} (${voice.lang})`; voiceSelect.append(option);
       });
     }
     voiceSelect.value = Array.from(voiceSelect.options).some((option) => option.value === previous) ? previous : '';
   };
   updateVoiceList();
   if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = updateVoiceList;
+
   const autoRow = document.createElement('label'); autoRow.className = 'companion-voice-toggle';
   const autoCheckbox = document.createElement('input'); autoCheckbox.type = 'checkbox'; autoCheckbox.checked = prefs.autoVoice;
   const autoText = document.createElement('span'); autoText.textContent = 'Reproducir automáticamente las respuestas';
   autoRow.append(autoCheckbox, autoText);
-  const voiceHelp = document.createElement('p'); voiceHelp.className = 'settings-hint'; voiceHelp.textContent = 'La voz usa el sintetizador del navegador o dispositivo, por lo que la calidad y las voces disponibles pueden variar.';
+  const voiceHelp = document.createElement('p'); voiceHelp.className = 'settings-hint';
+  voiceHelp.textContent = 'La voz depende del sintetizador disponible en tu navegador o dispositivo.';
+
   const refreshPreview = () => {
-    const current = getCompanionPrefs(); const info = getCharacterInfo(current.character);
+    const current = getCompanionPrefs();
+    const info = getCharacterInfo(current.character);
     name.textContent = info.name;
-    detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : 'Forma humana'} · ${info.name === 'Santitos' ? 'maduro, sincero y sarcástico' : info.name === 'Syntia' ? 'ingeniosa, cercana y con carácter' : 'joven, expresivo y sentimental'}`;
-    avatar.className = `companion-preview-avatar companion-avatar-${info.color}`;
+    const characterDescription = current.character === 'santitos'
+      ? 'Avatar masculino · directo, maduro y con carácter'
+      : current.character === 'syntia'
+        ? 'Avatar femenino · cercana, ingeniosa y resolutiva'
+        : 'Avatar juvenil · expresivo y desenfadado';
+    detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : characterDescription}`;
+    avatar.className = `companion-preview-avatar companion-avatar-${info.color}${current.appearance === 'wolf' ? ' companion-preview-wolf' : ''}`;
     avatar.replaceChildren();
     const img = document.createElement('img');
-    img.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${Object.prototype.hasOwnProperty.call(CHARACTER_INFO, current.character) ? current.character : 'jr'}.svg`;
-    img.alt = ''; avatar.append(img);
+    img.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${current.character}.svg`;
+    img.alt = `${info.selectorName || info.name}`;
+    avatar.append(img);
+    characterButtons.forEach((button, id) => {
+      const selected = id === current.character;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      const mark = button.querySelector('.companion-character-check');
+      if (mark) mark.textContent = selected ? '✓' : '+';
+      const image = button.querySelector('img');
+      if (image) {
+        image.src = current.appearance === 'wolf' ? 'assets/logo.png' : `assets/characters/${id}.svg`;
+        image.alt = `${getCharacterInfo(id).selectorName || getCharacterInfo(id).name}`;
+      }
+    });
   };
-  charSelect.addEventListener('change', () => { saveCompanionPrefs({ character: charSelect.value }); refreshPreview(); });
+
+  characterChoices.forEach((choice) => {
+    const info = getCharacterInfo(choice.id);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `companion-character-option companion-option-${info.color}`;
+    button.dataset.character = choice.id;
+    button.setAttribute('aria-label', `${choice.label}, ${choice.type}`);
+    const imageFrame = document.createElement('span'); imageFrame.className = 'companion-character-image';
+    const image = document.createElement('img'); image.src = `assets/characters/${choice.id}.svg`; image.alt = ''; image.loading = 'lazy';
+    imageFrame.append(image);
+    const copy = document.createElement('span'); copy.className = 'companion-character-copy';
+    const title = document.createElement('strong'); title.textContent = choice.label;
+    const type = document.createElement('small'); type.className = 'companion-character-type'; type.textContent = choice.type;
+    const text = document.createElement('span'); text.className = 'companion-character-detail'; text.textContent = choice.detail;
+    copy.append(title, type, text);
+    const check = document.createElement('span'); check.className = 'companion-character-check'; check.setAttribute('aria-hidden', 'true');
+    button.append(imageFrame, copy, check);
+    button.addEventListener('click', () => {
+      saveCompanionPrefs({ character: choice.id });
+      refreshPreview();
+    });
+    characterButtons.set(choice.id, button);
+    characterGrid.append(button);
+  });
+
   appearanceSelect.addEventListener('change', () => { saveCompanionPrefs({ appearance: appearanceSelect.value }); refreshPreview(); });
   autoCheckbox.addEventListener('change', () => saveCompanionPrefs({ autoVoice: autoCheckbox.checked }));
   voiceSelect.addEventListener('change', () => saveCompanionPrefs({ voiceURI: voiceSelect.value }));
+
+  const settingsDivider = document.createElement('div'); settingsDivider.className = 'companion-settings-divider';
+  const appearanceLabel = makeFieldLabel('Apariencia', appearanceSelect);
+  const voiceLabel = makeFieldLabel('Voz', voiceSelect);
+  const voiceSettings = document.createElement('div'); voiceSettings.className = 'companion-voice-settings';
+  voiceSettings.append(appearanceLabel, voiceLabel, autoRow, voiceHelp);
   const testRow = document.createElement('div'); testRow.className = 'settings-actions';
-  const testVoice = document.createElement('button'); testVoice.type='button'; testVoice.className='panel-tool-btn'; testVoice.textContent='Probar voz';
+  const testVoice = document.createElement('button'); testVoice.type = 'button'; testVoice.className = 'panel-tool-btn'; testVoice.textContent = 'Probar voz';
   testVoice.addEventListener('click', () => speakText(`Hola, soy ${getCharacterInfo(getCompanionPrefs().character).name}. Esta es mi voz. ¿Qué te apetece hacer hoy?`));
-  const stopVoice = document.createElement('button'); stopVoice.type='button'; stopVoice.className='panel-tool-btn'; stopVoice.textContent='Detener voz'; stopVoice.addEventListener('click', stopSpeaking);
+  const stopVoice = document.createElement('button'); stopVoice.type = 'button'; stopVoice.className = 'panel-tool-btn'; stopVoice.textContent = 'Detener voz'; stopVoice.addEventListener('click', stopSpeaking);
   testRow.append(testVoice, stopVoice);
-  card.append(preview, makeFieldLabel('Personalidad', charSelect), makeFieldLabel('Apariencia', appearanceSelect), makeFieldLabel('Voz', voiceSelect), autoRow, voiceHelp, testRow);
+  card.append(preview, selectorHeading, characterGrid, settingsDivider, voiceSettings, testRow);
   panel.append(kicker, heading, description, card);
   refreshPreview();
 }
-
 function showPanel(section) {
   setActiveNav(section);
   // La pantalla "¿Qué tienes en mente?" solo pertenece al chat vacío; nunca en historial/archivos/configuración
