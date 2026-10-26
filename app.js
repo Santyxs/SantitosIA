@@ -415,14 +415,15 @@ function saveCompanionPrefs(next) {
   const current = getCompanionPrefs();
   const updated = { ...current, ...next };
   safeSave(COMPANION_PREFS_KEY(), JSON.stringify(updated));
+  updateChatCompanionBackground('reposo');
   return updated;
 }
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.santitos; }
 /** Returns the best available image path for a character + expression. */
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.png';
-  // cache-bust so browsers pick up the new images quickly
-  const CACHE = 'v3';
+  // cache-bust so browsers pick up the new HD images quickly
+  const CACHE = 'v4';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
   const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
@@ -431,6 +432,14 @@ function getCharacterImagePath(characterId, expression = 'reposo', appearance = 
 function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
   const src = getCharacterImagePath(characterId, expression, appearance);
   return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" onerror="this.onerror=null;this.src='assets/logo.png';" />`;
+}
+function updateChatCompanionBackground(expression = 'reposo') {
+  if (!chatEls.messages) return;
+  const prefs = getCompanionPrefs();
+  const bgUrl = prefs.appearance === 'wolf'
+    ? 'assets/logo.png'
+    : getCharacterImagePath(prefs.character, expression, 'human');
+  chatEls.messages.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
 }
 function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -520,6 +529,7 @@ function showChatView() {
   chatEls.app.hidden = false;
   document.body.classList.add('chat-mode');
   if (chatEls.app) chatEls.app.classList.remove('sidebar-open');
+  updateChatCompanionBackground('reposo');
   renderRecentChats();
 }
 
@@ -552,6 +562,7 @@ function updateChatUser(user) {
   else showChatWelcome();
   renderRecentChats();
   applyUiPreferences();
+  updateChatCompanionBackground('reposo');
 }
 
 function safeRead(key) {
@@ -782,23 +793,22 @@ function showTypingIndicator() {
   row.className = 'chat-message assistant-message typing-row';
   row.id = 'typingIndicator';
   row.setAttribute('aria-label', 'SantitosIA está escribiendo');
-  const avatar = document.createElement('div');
-  avatar.className = 'message-avatar';
-  avatar.style.display = 'none'; // small circular avatars disabled
   const body = document.createElement('div');
   body.className = 'message-body';
   const bubble = document.createElement('div');
   bubble.className = 'message-bubble typing-bubble';
   bubble.innerHTML = '<span></span><span></span><span></span>';
   body.append(bubble);
-  row.append(avatar, body);
+  row.append(body);
   chatEls.messages.append(row);
   scrollChatToBottom(true);
+  updateChatCompanionBackground('pensando');
   return row;
 }
 function removeTypingIndicator() {
   const el = document.getElementById('typingIndicator');
   if (el) el.remove();
+  updateChatCompanionBackground('reposo');
 }
 function showChatToast(message, options = {}) {
   if (!chatEls.toast) return;
@@ -841,6 +851,7 @@ function renderConversation(id) {
   chatEls.messages.replaceChildren();
   if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
   session.messages.forEach((item) => addMessageToDOM(item, false));
+  updateChatCompanionBackground('reposo');
   scrollChatToBottom(true);
   renderRecentChats();
 }
@@ -848,23 +859,6 @@ function createMessageNode(item, addActions) {
   const role = item.role === 'user' ? 'user' : 'assistant';
   const row = document.createElement('article');
   row.className = `chat-message ${role}-message`;
-  const avatar = document.createElement('div');
-  avatar.className = `message-avatar${role === 'user' ? ' user-avatar' : ''}`;
-  if (role === 'assistant') {
-    // Small circular avatars disabled by user request
-    avatar.style.display = 'none';
-  } else {
-    const custom = getCustomUserAvatar();
-    if (custom) {
-      const uimg = document.createElement('img');
-      uimg.src = custom;
-      uimg.alt = 'Tú';
-      avatar.append(uimg);
-      avatar.classList.add('has-photo');
-    } else {
-      avatar.textContent = (chatEls.avatar && chatEls.avatar.textContent || 'S').slice(0, 1);
-    }
-  }
   const body = document.createElement('div'); body.className = 'message-body';
   const meta = document.createElement('div'); meta.className = 'message-meta';
   const name = document.createElement('span');
@@ -939,7 +933,7 @@ function createMessageNode(item, addActions) {
       body.append(actions);
     }
   }
-  if (role === 'user') row.append(body, avatar); else row.append(avatar, body);
+  row.append(body);
   return row;
 }
 function addMessageToDOM(item, scroll = true) {
@@ -1144,6 +1138,13 @@ async function generateReplyForSession(session, options = {}) {
   if (activeChatId === session.id && activeChatSection === 'chat') {
     renderConversation(session.id);
   }
+  let expression = 'hablando';
+  const content = String(assistantMessage.content || '');
+  if (content.length < 90 || /[😀😊😄🙂¡!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
+    expression = 'sonrisa';
+  }
+  updateChatCompanionBackground(expression);
+  window.setTimeout(() => updateChatCompanionBackground('reposo'), 4500);
   if (!assistantMessage.failed && prefs.autoVoice) speakText(assistantMessage.content);
 }
 
