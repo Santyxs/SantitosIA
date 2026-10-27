@@ -6,6 +6,10 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ARROW = '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+const ICON_COPY = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+const ICON_LISTEN = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.7l3.3 2.5v-9L5.2 6H2.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+const ICON_REGEN = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 0 1 8.2-3.3M12.8 8a4.8 4.8 0 0 1-8.2 3.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.2 2.8v2.6H8.6M4.8 13.2v-2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 // ─── DOM ──────────────────────────────────────────────────
 const els = {
   modal: document.getElementById('authModal'),
@@ -379,6 +383,7 @@ let chatSessions = [];
 let activeChatId = null;
 let activeChatSection = 'chat';
 let selectedAttachments = [];
+const ALL_ATTACHMENT_TYPES = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip,.toml,.sql,.csv,.gradle,.kt,.ts,.tsx,.jsx,.ini,.conf,.cfg';
 let webSearchEnabled = false;
 let toastTimer = null;
 let aiRequestInProgress = false;
@@ -585,6 +590,14 @@ function updateChatUser(user) {
   updateChatCompanionBackground('reposo');
 }
 
+
+function debounce(fn, wait = 100) {
+  let t = null;
+  return function debounced(...args) {
+    window.clearTimeout(t);
+    t = window.setTimeout(() => fn.apply(this, args), wait);
+  };
+}
 function safeRead(key) {
   try { return window.localStorage.getItem(key); } catch (_) { return null; }
 }
@@ -863,9 +876,13 @@ function renderConversation(id) {
     chatEls.welcome.hidden = true;
     chatEls.welcome.setAttribute('aria-hidden', 'true');
   }
-  chatEls.messages.replaceChildren();
   if (chatEls.previewNotice) chatEls.previewNotice.hidden = false;
-  session.messages.forEach((item) => addMessageToDOM(item, false));
+  const frag = document.createDocumentFragment();
+  const lastIdx = session.messages.length - 1;
+  for (let i = 0; i < session.messages.length; i++) {
+    frag.append(createMessageNode(session.messages[i], true));
+  }
+  chatEls.messages.replaceChildren(frag);
   updateChatCompanionBackground('reposo');
   scrollChatToBottom(true);
   renderRecentChats();
@@ -908,13 +925,13 @@ function createMessageNode(item, addActions) {
     copy.className = 'message-action';
     copy.type = 'button';
     copy.setAttribute('aria-label', 'Copiar');
-    copy.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Copiar</span>';
+    copy.innerHTML = ICON_COPY + '<span>Copiar</span>';
     copy.addEventListener('click', () => copyText(item.content || ''));
     actions.append(copy);
     const listen = document.createElement('button');
     listen.className = 'message-action'; listen.type = 'button';
     listen.setAttribute('aria-label', 'Escuchar respuesta');
-    listen.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.7l3.3 2.5v-9L5.2 6H2.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Escuchar</span>';
+    listen.innerHTML = ICON_LISTEN + '<span>Escuchar</span>';
     listen.addEventListener('click', () => speakText(item.content || ''));
     actions.append(listen);
     if (addActions) {
@@ -922,21 +939,23 @@ function createMessageNode(item, addActions) {
       regen.className = 'message-action';
       regen.type = 'button';
       regen.setAttribute('aria-label', 'Reintentar');
-      regen.innerHTML = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 0 1 8.2-3.3M12.8 8a4.8 4.8 0 0 1-8.2 3.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.2 2.8v2.6H8.6M4.8 13.2v-2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reintentar</span>';
+      regen.innerHTML = ICON_REGEN + '<span>Reintentar</span>';
       regen.addEventListener('click', () => regenerateLastAssistant());
       actions.append(regen);
     }
     body.append(actions);
   } else if (role === 'user' && addActions) {
     const session = activeSession();
-    const isLastUser = session && session.messages.length && session.messages.filter((m) => m.role === 'user').pop() === item;
-    let lastUser = null;
-    if (session) {
+    let isLastUser = false;
+    if (session && session.messages.length) {
       for (let i = session.messages.length - 1; i >= 0; i--) {
-        if (session.messages[i].role === 'user') { lastUser = session.messages[i]; break; }
+        if (session.messages[i].role === 'user') {
+          isLastUser = session.messages[i] === item;
+          break;
+        }
       }
     }
-    if (lastUser && lastUser.timestamp === item.timestamp && lastUser.content === item.content) {
+    if (isLastUser) {
       const actions = document.createElement('div'); actions.className = 'message-actions';
       const edit = document.createElement('button');
       edit.className = 'message-action';
@@ -951,6 +970,11 @@ function createMessageNode(item, addActions) {
   return row;
 }
 function addMessageToDOM(item, scroll = true) {
+  // Al añadir un mensaje de usuario, quitar el botón "Editar" del mensaje anterior
+  if (item && item.role === 'user' && chatEls.messages) {
+    const prevUsers = chatEls.messages.querySelectorAll('.user-message .message-actions');
+    prevUsers.forEach((el) => el.remove());
+  }
   chatEls.messages.append(createMessageNode(item, true));
   if (scroll) scrollChatToBottom(true);
 }
@@ -966,19 +990,29 @@ async function copyText(text) {
 }
 function renderRecentChats() {
   if (!chatEls.recentList) return;
-  chatEls.recentList.replaceChildren();
-  const recent = [...chatSessions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 8);
+  const recent = chatSessions.length
+    ? [...chatSessions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 8)
+    : [];
   if (!recent.length) {
-    const empty = document.createElement('button'); empty.type = 'button'; empty.className = 'recent-chat empty-recent'; empty.disabled = true;
-    empty.textContent = 'Las conversaciones aparecerán aquí'; chatEls.recentList.append(empty); return;
+    const empty = document.createElement('button');
+    empty.type = 'button';
+    empty.className = 'recent-chat empty-recent';
+    empty.disabled = true;
+    empty.textContent = 'Las conversaciones aparecerán aquí';
+    chatEls.recentList.replaceChildren(empty);
+    return;
   }
-  recent.forEach((session) => {
-    const button = document.createElement('button'); button.type = 'button';
+  const frag = document.createDocumentFragment();
+  for (const session of recent) {
+    const button = document.createElement('button');
+    button.type = 'button';
     button.className = 'recent-chat' + (session.id === activeChatId ? ' current' : '');
-    button.title = session.title; button.textContent = session.title;
+    button.title = session.title;
+    button.textContent = session.title;
     button.addEventListener('click', () => { renderConversation(session.id); closeChatSidebar(); });
-    chatEls.recentList.append(button);
-  });
+    frag.append(button);
+  }
+  chatEls.recentList.replaceChildren(frag);
 }
 function renderAttachmentPreview() {
   if (!chatEls.attachmentPreview) return;
@@ -1150,7 +1184,8 @@ async function generateReplyForSession(session, options = {}) {
   saveChatSessions();
   renderRecentChats();
   if (activeChatId === session.id && activeChatSection === 'chat') {
-    renderConversation(session.id);
+    // Solo añadir el mensaje nuevo (evita re-render completo de la conversación)
+    addMessageToDOM(assistantMessage, true);
   }
   let expression = 'hablando';
   const content = String(assistantMessage.content || '');
@@ -1971,8 +2006,12 @@ async function sendChatMessage(text) {
   renderAttachmentPreview();
   saveChatSessions();
   renderRecentChats();
-  if (activeChatSection !== 'chat') openChatSection('chat');
-  else renderConversation(session.id);
+  if (activeChatSection !== 'chat') {
+    openChatSection('chat');
+  } else {
+    // Añadir solo el mensaje del usuario en lugar de re-renderizar toda la conversación
+    addMessageToDOM(userMessage, true);
+  }
   await generateReplyForSession(session, { files: filesToSend });
 }
 
@@ -2003,7 +2042,6 @@ if (chatEls.fileInput) {
     renderAttachmentPreview(); chatEls.fileInput.value = ''; chatEls.fileInput.accept = ALL_ATTACHMENT_TYPES;
   });
 }
-const ALL_ATTACHMENT_TYPES = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.html,.css,.xml,.properties,.log,.zip,.toml,.sql,.csv,.gradle,.kt,.ts,.tsx,.jsx,.ini,.conf,.cfg';
 document.getElementById('attachFileBtn')?.addEventListener('click', () => {
   if (!chatEls.fileInput) return;
   chatEls.fileInput.accept = ALL_ATTACHMENT_TYPES;
