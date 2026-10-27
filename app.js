@@ -1,16 +1,10 @@
-/**
- * SantitosIA — Auth (Supabase) + UI
- * Sistema reconstruido desde 0
- */
-
 // ─── Config ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ARROW =
-  '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ARROW = '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 // ─── DOM ──────────────────────────────────────────────────
 const els = {
@@ -44,7 +38,7 @@ const els = {
   logoutBtn: document.getElementById('logoutBtn'),
 };
 
-let mode = 'register'; // 'register' | 'login'
+let mode = 'register';
 let currentAuthUser = null;
 
 // ─── Helpers UI ───────────────────────────────────────────
@@ -143,7 +137,6 @@ function closeMenu() {
 function displayNameFromEmail(email) {
   const localPart = String(email || '').split('@')[0].trim();
   if (!localPart) return 'Mi cuenta';
-  // Convierte santy.xs o santy_xs en un nombre legible sin mostrar el correo completo.
   const words = localPart.replace(/[._+-]+/g, ' ').replace(/\s+/g, ' ').trim();
   return words ? words.replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('es')) : 'Mi cuenta';
 }
@@ -186,7 +179,6 @@ function setUser(user) {
     closeAccountMenu();
   }
   updateChatUser(loggedIn ? user : null);
-  // Mantener la ruta solicitada al recargar subpáginas protegidas.
   const currentRoute = routeFromLocation();
   if (loggedIn && currentRoute !== 'home') {
     showChatView();
@@ -227,7 +219,6 @@ async function register(email, password) {
   });
   if (error) throw error;
 
-  // El trigger de Supabase suele crear el perfil; esto es respaldo
   if (data.user) {
     await sb.from('profiles').upsert(
       { id: data.user.id, email: data.user.email, plan: 'free' },
@@ -263,7 +254,6 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-open-auth]');
   if (t) {
     e.preventDefault();
-    // Las llamadas a la acción principal deben reutilizar la sesión existente.
     if (t.dataset.openAuth === 'register' && currentAuthUser) {
       window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
       showChatView();
@@ -393,7 +383,6 @@ let webSearchEnabled = false;
 let toastTimer = null;
 let aiRequestInProgress = false;
 const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}`;
-// Se activa cuando exista un modelo Premium real y una verificación de pago del lado servidor.
 const PREMIUM_PLAN_ENABLED = false;
 const CHARACTER_INFO = {
   santitos: { name: 'SantitosIA', selectorName: 'SantitosIA · Masculino', description: 'Directo, maduro y con carácter', icon: '✦', color: 'santitos', folder: 'santitos' },
@@ -420,10 +409,8 @@ function saveCompanionPrefs(next) {
   return updated;
 }
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.santitos; }
-/** Returns the best available image path for a character + expression. */
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.png';
-  // cache-bust so browsers pick up the new HD images quickly
   const CACHE = 'v4';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
@@ -602,7 +589,7 @@ function safeRead(key) {
   try { return window.localStorage.getItem(key); } catch (_) { return null; }
 }
 
-const DEFAULT_USER_AVATAR = null; // sin imagen = inicial del nombre
+const DEFAULT_USER_AVATAR = null;
 function userAvatarStorageKey() {
   return `santitosia:user-avatar:${chatUserId || 'guest'}`;
 }
@@ -614,7 +601,6 @@ function clearCustomUserAvatar() {
 }
 function applyUserAvatarEverywhere() {
   const src = getCustomUserAvatar();
-  // Avatar del sidebar del chat
   if (chatEls.avatar) {
     if (src) {
       chatEls.avatar.textContent = '';
@@ -634,7 +620,6 @@ function applyUserAvatarEverywhere() {
       chatEls.avatar.textContent = name.charAt(0).toLocaleUpperCase('es');
     }
   }
-  // Avatares de mensajes del usuario
   document.querySelectorAll('.user-message .message-avatar').forEach((el) => {
     if (src) {
       el.textContent = '';
@@ -654,7 +639,7 @@ function applyUserAvatarEverywhere() {
       el.textContent = (name || 'S').charAt(0).toLocaleUpperCase('es');
     }
   });
-  // Preview en configuración (solo foto de usuario, nunca el logo del modelo)
+
   document.querySelectorAll('.settings-user-avatar-preview, .settings-logo-preview').forEach((box) => {
     if (src) {
       box.classList.add('has-photo');
@@ -681,7 +666,6 @@ function applyUserAvatarEverywhere() {
       placeholder.textContent = name.charAt(0).toLocaleUpperCase('es');
     }
   });
-  // Avatar en tarjeta de configuración
   const settingsAvatar = document.querySelector('.settings-account-avatar');
   if (settingsAvatar) {
     if (src) {
@@ -740,7 +724,6 @@ function updatePlanCard() {
   if (name) name.textContent = pro ? 'Santitos' : 'Santitos Jr';
   if (detail) detail.textContent = pro ? 'Razonamiento avanzado' : 'Rápido · Gratis';
   if (badge) badge.textContent = pro ? 'PREMIUM' : 'GRATIS';
-  // Sincroniza el botón del selector de modelos
   if (chatEls.modelNameLabel) chatEls.modelNameLabel.textContent = pro ? 'Santitos' : 'Santitos Jr';
   if (chatEls.modelBadgeLabel) {
     chatEls.modelBadgeLabel.textContent = pro ? 'Premium' : 'Gratis';
@@ -795,7 +778,6 @@ function setModelValue(value, options = {}) {
     return;
   }
   if (next === 'pro' && !skipPaywall && !hasPremiumPlan()) {
-    // Forzar UI en Jr y abrir checkout
     chatEls.model.value = 'jr';
     updatePlanCard();
     requirePremiumOrCheckout();
@@ -948,7 +930,6 @@ function createMessageNode(item, addActions) {
   } else if (role === 'user' && addActions) {
     const session = activeSession();
     const isLastUser = session && session.messages.length && session.messages.filter((m) => m.role === 'user').pop() === item;
-    // Fallback: compare content+timestamp
     let lastUser = null;
     if (session) {
       for (let i = session.messages.length - 1; i >= 0; i--) {
@@ -1561,7 +1542,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
 }
 function showPanel(section) {
   setActiveNav(section);
-  // La pantalla "¿Qué tienes en mente?" solo pertenece al chat vacío; nunca en historial/archivos/configuración
   if (chatEls.welcome) {
     chatEls.welcome.hidden = true;
     chatEls.welcome.setAttribute('aria-hidden', 'true');
@@ -2095,10 +2075,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 // ─── Inicio y retorno de confirmación ──────────────────────
-// No llamar a signOut() cuando aún no hay sesión: al volver del enlace
-// de confirmación, el SDK puede estar procesando el code/token de la URL.
-// Si se cierra sesión en ese momento, se puede borrar la sesión recién creada.
-// Navegación por rutas: GitHub Pages sirve 404.html como fallback para rutas profundas.
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
   if (path.endsWith('/chat')) return 'chat';
@@ -2117,11 +2093,9 @@ window.addEventListener('popstate', async () => {
   const { data } = await sb.auth.getSession();
   const user = data && data.session && data.session.user;
   if (!user) { showLandingView(); openAuth('login'); return; }
-  // setUser ya abre la sección correspondiente a la ruta actual.
   setUser(user);
 });
 
-// Compatibilidad con enlaces antiguos que aún usen #chat.
 window.addEventListener('hashchange', async () => {
   if (window.location.hash === '#chat') {
     window.history.replaceState({ section: 'chat' }, '', '/SantitosIA/chat');
@@ -2148,8 +2122,7 @@ window.addEventListener('hashchange', async () => {
     setUser(user && user.email ? user : null);
 
     if (event === 'SIGNED_IN' && confirmationReturn) {
-      // El enlace de confirmación ha generado una sesión válida.
-      msg('¡Correo confirmado! Has iniciado sesión en SantitosIA.');
+      msg('Correo confirmado! Has iniciado sesión en SantitosIA.');
       if (els.modal.classList.contains('open')) {
         setTimeout(closeAuth, 1400);
       }
@@ -2158,8 +2131,6 @@ window.addEventListener('hashchange', async () => {
   });
 
   try {
-    // getSession permite que el cliente termine de restaurar/procesar la sesión
-    // sin cerrar sesión de forma preventiva.
     const { data } = await sb.auth.getSession();
     const user = data && data.session && data.session.user;
     if (user && user.email) setUser(user);
@@ -2174,8 +2145,6 @@ window.addEventListener('hashchange', async () => {
       setTimeout(closeAuth, 1400);
       cleanAuthUrl();
     } else if (confirmationReturn) {
-      // Si el proveedor confirma el correo pero no devuelve sesión, pedir login
-      // de forma clara en lugar de dejar una página sin explicación.
       openAuth('login');
       msg('¡Enlace de confirmación procesado! Inicia sesión para continuar.');
       cleanAuthUrl();
@@ -2193,8 +2162,6 @@ function cleanAuthUrl() {
 }
 
 // ─── Precios y checkout con PayPal ───────────────────────
-// Pon aquí tu Client ID de PayPal (Dashboard → Apps & Credentials).
-// Sandbox: usa credenciales de prueba. Live: credenciales de producción.
 const PAYPAL_CLIENT_ID = 'BAAUy48CAf9uF28_OqlP6OsMGMCvlsESqDcaoYdO1Z3RWHdQ8pIChsRSg0uiem8EQbUMLsu-PeN51dG7kE';
 const PAYPAL_CURRENCY = 'EUR';
 const PAYPAL_PREMIUM_AMOUNT = '3.00';
