@@ -88,8 +88,8 @@ function openAuth(nextMode) {
   els.password.autocomplete = reg ? 'new-password' : 'current-password';
   els.submit.innerHTML = (reg ? 'Crear cuenta ' : 'Iniciar sesión ') + ARROW;
   els.switch.innerHTML = reg
-    ? '¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button>'
-    : '¿Todavía no tienes cuenta? <button type="button" data-open-auth="register">Regístrate</button>';
+    ? 'Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button>'
+    : 'Todavía no tienes cuenta? <button type="button" data-open-auth="register">Regístrate</button>';
   if (els.note) {
     els.note.textContent = reg
       ? 'Registro con correo y contraseña. Plan inicial: gratis.'
@@ -228,7 +228,7 @@ async function register(email, password) {
 
   if (data.session) {
     setUser(data.user);
-    msg('¡Cuenta creada! Ya has iniciado sesión.');
+    msg('Cuenta creada! Ya has iniciado sesión.');
     setTimeout(closeAuth, 1100);
   } else {
     msg('Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.');
@@ -239,7 +239,7 @@ async function login(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
   setUser(data.user);
-  msg('¡Bienvenido de nuevo!');
+  msg('Bienvenido de nuevo!');
   setTimeout(closeAuth, 900);
 }
 
@@ -1014,7 +1014,7 @@ function renameSession(id) {
 function deleteSession(id) {
   const session = chatSessions.find((s) => s.id === id);
   if (!session) return;
-  const ok = window.confirm(`¿Borrar «${session.title}»? Esta acción no se puede deshacer.`);
+  const ok = window.confirm(`Borrar «${session.title}»? Esta acción no se puede deshacer.`);
   if (!ok) return;
   chatSessions = chatSessions.filter((s) => s.id !== id);
   if (activeChatId === id) {
@@ -1154,7 +1154,7 @@ async function generateReplyForSession(session, options = {}) {
   }
   let expression = 'hablando';
   const content = String(assistantMessage.content || '');
-  if (content.length < 90 || /[😀😊😄🙂¡!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
+  if (content.length < 90 || /[😀😊😄🙂!]/.test(content) || /gracias|genial|perfecto|encantado|hola/i.test(content)) {
     expression = 'sonrisa';
   }
   const lockTime = prefs.autoVoice ? 0 : 5500;
@@ -1230,7 +1230,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   ['Personal','Estudios','Trabajo','Objetivos','Recuerdos','Desahogo','Otros'].forEach((category) => {
     const option = document.createElement('option'); option.value = category; option.textContent = category; categorySelect.append(option);
   });
-  const contentArea = document.createElement('textarea'); contentArea.className = 'journal-input journal-textarea'; contentArea.placeholder = '¿Qué te gustaría recordar?'; contentArea.rows = 7; contentArea.maxLength = 20000; contentArea.required = true;
+  const contentArea = document.createElement('textarea'); contentArea.className = 'journal-input journal-textarea'; contentArea.placeholder = 'Qué te gustaría recordar?'; contentArea.rows = 7; contentArea.maxLength = 20000; contentArea.required = true;
   const visibilitySelect = document.createElement('select'); visibilitySelect.className = 'journal-input';
   [['private','Solo yo (privado)'],['companion','Compartir con mi compañero']].forEach(([value,label]) => {
     const option = document.createElement('option'); option.value = value; option.textContent = label; visibilitySelect.append(option);
@@ -1311,7 +1311,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
         row.append(tool('Compartir con compañero', () => shareEntryWithChat(entry, true)));
       }
       row.append(tool('Borrar', async () => {
-        if (!window.confirm(`¿Borrar la entrada «${entry.title}»? Esta acción no se puede deshacer.`)) return;
+        if (!window.confirm(`Borrar la entrada «${entry.title}»? Esta acción no se puede deshacer.`)) return;
         const { error: deleteError } = await sb.from('journal_entries').delete().eq('id', entry.id).eq('user_id', chatUserId);
         if (deleteError) { showChatToast('No se pudo borrar la entrada.', { important: true }); return; }
         showChatToast('Entrada eliminada.'); await loadEntries();
@@ -1325,13 +1325,13 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   async function shareEntryWithChat(entry, changeVisibility) {
     if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
     if (changeVisibility) {
-      const confirmed = window.confirm(`Para comentar «${entry.title}», se compartirá esta entrada con tu compañero. La IA recibirá el contenido solo al abrir esta conversación. ¿Continuar?`);
+      const confirmed = window.confirm(`Para comentar «${entry.title}», se compartirá esta entrada con tu compañero. La IA recibirá el contenido solo al abrir esta conversación. Continuar?`);
       if (!confirmed) return;
       const { error } = await sb.from('journal_entries').update({ visibility: 'companion' }).eq('id', entry.id).eq('user_id', chatUserId);
       if (error) { showChatToast('No se pudo cambiar la privacidad de la entrada.', { important: true }); return; }
       entry.visibility = 'companion'; await loadEntries();
     } else {
-      const confirmed = window.confirm(`Vas a enviar «${entry.title}» al chat con tu compañero para comentarla. ¿Continuar?`);
+      const confirmed = window.confirm(`Vas a enviar «${entry.title}» al chat con tu compañero para comentarla. Continuar?`);
       if (!confirmed) return;
     }
     const prompt = `Quiero comentar contigo esta entrada de mi diario. Ayúdame a reflexionar sobre ella y escucha antes de dar consejos.\n\nTítulo: ${entry.title}\nCategoría: ${entry.category}\nContenido:\n${entry.content}`;
@@ -1347,7 +1347,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     const today = new Date(); today.setHours(0,0,0,0);
     const todayEntries = entries.filter((entry) => new Date(entry.created_at).getTime() >= today.getTime());
     if (!todayEntries.length) { showChatToast('Todavía no hay entradas de hoy que resumir.'); return; }
-    if (!window.confirm('Se enviará a la IA el contenido de las entradas de hoy que has guardado en el diario para preparar un resumen. ¿Continuar?')) return;
+    if (!window.confirm('Se enviará a la IA el contenido de las entradas de hoy que has guardado en el diario para preparar un resumen. Continuar?')) return;
     summaryButton.disabled = true; summaryButton.textContent = 'Preparando…';
     try {
       const source = todayEntries.map((entry) => `- ${entry.title}: ${entry.content}`).join('\n');
@@ -1533,7 +1533,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   voiceSettings.append(appearanceLabel, voiceLabel, autoRow, voiceHelp);
   const testRow = document.createElement('div'); testRow.className = 'settings-actions';
   const testVoice = document.createElement('button'); testVoice.type = 'button'; testVoice.className = 'panel-tool-btn'; testVoice.textContent = 'Probar voz';
-  testVoice.addEventListener('click', () => speakText(`Hola, soy ${getCharacterInfo(getCompanionPrefs().character).name}. Esta es mi voz. ¿Qué te apetece hacer hoy?`));
+  testVoice.addEventListener('click', () => speakText(`Hola, soy ${getCharacterInfo(getCompanionPrefs().character).name}. Esta es mi voz. Qué te apetece hacer hoy?`));
   const stopVoice = document.createElement('button'); stopVoice.type = 'button'; stopVoice.className = 'panel-tool-btn'; stopVoice.textContent = 'Detener voz'; stopVoice.addEventListener('click', stopSpeaking);
   testRow.append(testVoice, stopVoice);
   card.append(preview, selectorHeading, characterGrid, settingsDivider, voiceSettings, testRow);
@@ -1898,7 +1898,7 @@ function showPanel(section) {
         showChatToast('No hay historial que borrar.');
         return;
       }
-      const ok = window.confirm('¿Borrar todas las conversaciones guardadas en este navegador? Esta acción no se puede deshacer.');
+      const ok = window.confirm('Borrar todas las conversaciones guardadas en este navegador? Esta acción no se puede deshacer.');
       if (!ok) return;
       chatSessions = [];
       activeChatId = null;
@@ -2141,12 +2141,12 @@ window.addEventListener('hashchange', async () => {
       cleanAuthUrl();
     } else if (confirmationReturn && user && user.email) {
       openAuth('login');
-      msg('¡Correo confirmado! Has iniciado sesión en SantitosIA.');
+      msg('Correo confirmado! Has iniciado sesión en SantitosIA.');
       setTimeout(closeAuth, 1400);
       cleanAuthUrl();
     } else if (confirmationReturn) {
       openAuth('login');
-      msg('¡Enlace de confirmación procesado! Inicia sesión para continuar.');
+      msg('Enlace de confirmación procesado! Inicia sesión para continuar.');
       cleanAuthUrl();
     }
   } catch (err) {
