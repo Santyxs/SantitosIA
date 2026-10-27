@@ -85,8 +85,24 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: userData, error: userError } =
-    await userClient.auth.getUser();
+  // Auth + body en paralelo para reducir latencia del cold start
+  const bodyPromise = (async () => {
+    const raw = await req.text();
+    if (raw.length > 1_700_000) {
+      const err = new Error("PAYLOAD_TOO_LARGE");
+      (err as any).code = 413;
+      throw err;
+    }
+    return JSON.parse(raw);
+  })();
+
+  const [{ data: userData, error: userError }, bodyResult] = await Promise.all([
+    userClient.auth.getUser(),
+    bodyPromise.then((b) => ({ ok: true as const, body: b })).catch((e) => ({
+      ok: false as const,
+      error: e,
+    })),
+  ]);
 
   const user = userData?.user;
 
@@ -96,23 +112,18 @@ Deno.serve(async (req) => {
     }, 401);
   }
 
-  let body: any;
-
-  try {
-    const raw = await req.text();
-
-    if (raw.length > 1_700_000) {
+  if (!bodyResult.ok) {
+    if ((bodyResult.error as any)?.code === 413) {
       return jsonResponse({
         error: "La petición es demasiado grande. Reduce los archivos adjuntos.",
       }, 413);
     }
-
-    body = JSON.parse(raw);
-  } catch {
     return jsonResponse({
       error: "La petición no tiene un formato válido.",
     }, 400);
   }
+
+  const body: any = bodyResult.body;
 
   const character =
     typeof body.character === "string" &&
