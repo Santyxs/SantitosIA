@@ -387,6 +387,8 @@ img{max-width:100%;display:block}
 .model-section{
   padding:80px 0 90px;
   border-top:1px solid rgba(255,255,255,.05);
+  content-visibility:auto;
+  contain-intrinsic-size:auto 720px;
 }
 .section-heading{
   display:flex;
@@ -505,7 +507,11 @@ img{max-width:100%;display:block}
 }
 
 /* Features */
-.features-section{padding:50px 0 100px}
+.features-section{
+  padding:50px 0 100px;
+  content-visibility:auto;
+  contain-intrinsic-size:auto 520px;
+}
 .centered{
   display:block;
   text-align:center;
@@ -562,7 +568,11 @@ img{max-width:100%;display:block}
 }
 
 /* Pricing banner */
-.pricing-section{padding:0 0 100px}
+.pricing-section{
+  padding:0 0 100px;
+  content-visibility:auto;
+  contain-intrinsic-size:auto 280px;
+}
 .pricing-banner{
   display:flex;
   align-items:center;
@@ -1745,6 +1755,9 @@ body.chat-compact .chat-stage{padding-top:18px}
 
 /* Smooth entrance for messages */
 .chat-message {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
   animation: message-in .38s cubic-bezier(.2,.8,.2,1) both;
 }
 @keyframes message-in {
@@ -1770,4 +1783,16 @@ body.chat-compact .chat-stage{padding-top:18px}
 }
 
 
-
+/* Performance: isolate heavy UI regions */
+.chat-sidebar{
+  contain:layout style;
+}
+.chat-stage{
+  contain:layout;
+}
+.chat-composer-area{
+  contain:layout style;
+}
+img{
+  content-visibility:auto;
+}
