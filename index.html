@@ -27,7 +27,11 @@
   <title>SantitosIA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://tznuahhwpewbpxgmtkek.supabase.co">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="styles.css" as="style">
+  <link rel="preload" href="assets/logo.png" as="image">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="manifest" href="manifest.json">
@@ -40,7 +44,7 @@
 
   <header class="topbar" id="topbar">
     <a class="brand" href="#" aria-label="SantitosIA inicio">
-      <span class="brand-mark wolf-brand"><img src="assets/logo.png" alt=""></span>
+      <span class="brand-mark wolf-brand"><img src="assets/logo.png" alt="" width="40" height="40" fetchpriority="high" decoding="async"></span>
       <span class="brand-word">
         <span class="brand-name">Santitos<span class="brand-accent">IA</span></span>
         <small>TU IA, SIEMPRE CONTIGO</small>
@@ -97,7 +101,7 @@
     <aside class="chat-sidebar" id="chatSidebar">
       <div class="chat-sidebar-brand">
         <a class="chat-brand" href="#" id="chatBrandHome" aria-label="Volver al inicio">
-          <img src="assets/logo.png" alt="" class="chat-brand-wolf">
+          <img src="assets/logo.png" alt="" class="chat-brand-wolf" width="32" height="32" loading="lazy" decoding="async">
           <span>Santitos<span>IA</span></span>
         </a>
         <button class="icon-button sidebar-collapse" id="closeChatSidebar" type="button" aria-label="Cerrar menú" title="Cerrar menú">×</button>
@@ -178,7 +182,7 @@
 
       <main class="chat-stage" id="chatStage">
         <div class="chat-welcome" id="chatWelcome">
-          <div class="welcome-mark-wrap"><div class="welcome-mark-glow"></div><img src="assets/logo.png" alt="Lobo de SantitosIA"></div>
+          <div class="welcome-mark-wrap"><div class="welcome-mark-glow"></div><img src="assets/logo.png" alt="Lobo de SantitosIA" width="120" height="120" loading="lazy" decoding="async"></div>
           <div class="welcome-eyebrow"><span class="context-dot"></span> LISTO PARA AYUDARTE</div>
           <h1>Qué tienes en <span class="chat-gradient">mente?</span></h1>
           <p>Pregúntame lo que quieras. Podemos hablar de Minecraft, tecnología, trabajo o cualquier duda del día a día.</p>
@@ -228,7 +232,7 @@
         <div class="orbital orbital-b"></div>
         <div class="glow-core"></div>
         <div class="wolf-emblem">
-          <img src="assets/logo.png" alt="Cabeza de lobo neón de SantitosIA">
+          <img src="assets/logo.png" alt="Cabeza de lobo neón de SantitosIA" width="310" height="310" loading="lazy" decoding="async">
         </div>
         <div class="floating-card card-top">
           <span class="mini-icon purple">✦</span>
@@ -359,7 +363,7 @@
 
   <footer class="footer section-wrap">
     <a class="brand" href="#">
-      <span class="brand-mark small-mark wolf-brand"><img src="assets/logo.png" alt=""></span>
+      <span class="brand-mark small-mark wolf-brand"><img src="assets/logo.png" alt="" width="32" height="32" loading="lazy" decoding="async"></span>
       <span class="brand-word">
         <span class="brand-name">Santitos<span class="brand-accent">IA</span></span>
         <small>TU IA, SIEMPRE CONTIGO</small>
@@ -372,7 +376,7 @@
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button class="modal-close" id="closeAuth" aria-label="Cerrar">×</button>
       <div class="auth-logo">
-        <span class="brand-mark wolf-brand"><img src="assets/logo.png" alt=""></span>
+        <span class="brand-mark wolf-brand"><img src="assets/logo.png" alt="" width="60" height="60" loading="lazy" decoding="async"></span>
       </div>
       <div class="eyebrow">BIENVENIDO A SANTITOSIA</div>
       <h2 id="authTitle">Crea tu cuenta</h2>
@@ -415,7 +419,7 @@
     </section>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
