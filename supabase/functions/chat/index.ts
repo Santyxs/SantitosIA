@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "https://santyxs.github.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Expose-Headers": "X-Daily-Used, X-Daily-Limit, X-Model",
   "Vary": "Origin",
 };
 
@@ -283,6 +284,8 @@ Deno.serve(async (req) => {
           "nvidia/nemotron-3.5-lightning:free",
         ];
 
+  const wantStream = body.stream === true;
+
   let upstream: Response;
 
   try {
@@ -302,6 +305,7 @@ Deno.serve(async (req) => {
           messages: finalMessages,
           max_tokens: mode === "journal_draft" ? 1100 : 900,
           temperature: 0.8,
+          stream: wantStream,
         }),
         signal: AbortSignal.timeout(55_000),
       },
@@ -312,9 +316,8 @@ Deno.serve(async (req) => {
     }, 502);
   }
 
-  const upstreamData = await upstream.json().catch(() => ({}));
-
   if (!upstream.ok) {
+    const upstreamData = await upstream.json().catch(() => ({}));
     console.error(
       "OpenRouter response:",
       upstream.status,
@@ -332,6 +335,23 @@ Deno.serve(async (req) => {
     }, 502);
   }
 
+  // Streaming SSE (OpenAI-compatible) reenviado al cliente
+  if (wantStream && upstream.body) {
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        "Connection": "keep-alive",
+        "X-Daily-Used": String(quota?.used ?? 0),
+        "X-Daily-Limit": String(dailyLimit),
+        "X-Model": model,
+      },
+    });
+  }
+
+  const upstreamData = await upstream.json().catch(() => ({}));
   const reply = upstreamData?.choices?.[0]?.message?.content;
 
   if (typeof reply !== "string" || !reply.trim()) {
