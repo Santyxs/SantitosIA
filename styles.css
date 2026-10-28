@@ -1870,3 +1870,36 @@ img{
     width: 100%;
   }
 }
+
+
+/* Avatar Premium bloqueado en selector */
+.companion-character-option.is-locked{
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+.companion-character-option.is-locked .companion-character-image{
+  position: relative;
+  filter: grayscale(0.35) brightness(0.85);
+}
+.companion-character-lock{
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 22, 0.72);
+  border: 1px solid rgba(180, 150, 255, 0.35);
+  font-size: 13px;
+  line-height: 1;
+}
+.companion-character-type.is-premium-tag{
+  color: #d4b6ff;
+  letter-spacing: 0.3px;
+}
+.companion-character-option.is-locked.selected{
+  /* no debería seleccionarse, pero por si acaso */
+  box-shadow: none;
+}
