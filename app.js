@@ -1119,6 +1119,7 @@ async function callCompanionAI({ messages, mode: requestMode = 'chat', images = 
       appearance: prefs.appearance,
       messages,
       images: images.slice(0, 2),
+      stream: false,
     },
   });
   if (error) throw new Error(await functionErrorMessage(error));
@@ -1126,6 +1127,87 @@ async function callCompanionAI({ messages, mode: requestMode = 'chat', images = 
     throw new Error('La IA no devolvió una respuesta válida. Inténtalo de nuevo.');
   }
   return data;
+}
+
+/** Streaming SSE desde la edge function (formato OpenAI / OpenRouter). */
+async function callCompanionAIStream({ messages, mode: requestMode = 'chat', images = [] }, onToken) {
+  const prefs = getCompanionPrefs();
+  const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
+  const { data: sessionData } = await sb.auth.getSession();
+  const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+  if (!accessToken) throw new Error('Inicia sesión para utilizar la IA.');
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode: requestMode,
+      plan,
+      character: prefs.character,
+      appearance: prefs.appearance,
+      messages,
+      images: images.slice(0, 2),
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    let message = 'No se ha podido contactar con la IA.';
+    try {
+      const errBody = await response.json();
+      if (errBody && errBody.error) message = String(errBody.error);
+    } catch (_) {}
+    throw new Error(message);
+  }
+
+  if (!response.body) throw new Error('El navegador no pudo leer la respuesta en streaming.');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  let model = response.headers.get('X-Model') || null;
+  const usedHeader = response.headers.get('X-Daily-Used');
+  const limitHeader = response.headers.get('X-Daily-Limit');
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line.startsWith('data:')) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      let json;
+      try { json = JSON.parse(payload); } catch (_) { continue; }
+      if (json.model) model = json.model;
+      const piece = json.choices && json.choices[0] && json.choices[0].delta
+        ? json.choices[0].delta.content
+        : null;
+      if (typeof piece === 'string' && piece) {
+        fullText += piece;
+        if (typeof onToken === 'function') onToken(piece, fullText);
+      }
+    }
+  }
+
+  const reply = fullText.trim();
+  if (!reply) throw new Error('La IA devolvió una respuesta vacía. Inténtalo de nuevo.');
+  return {
+    reply,
+    model,
+    usage: {
+      used: usedHeader != null ? Number(usedHeader) : null,
+      limit: limitHeader != null ? Number(limitHeader) : null,
+    },
+  };
 }
 
 async function callStandaloneAI(options) {
@@ -1143,6 +1225,7 @@ async function generateReplyForSession(session, options = {}) {
   let assistantMessage;
   const prefs = getCompanionPrefs();
   const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
+  let streamBubble = null;
   try {
     const attachments = options.files ? await readAttachmentData(options.files) : { text: options.extraText || '', images: options.images || [] };
     if (attachments.text && session.messages.length) {
@@ -1160,18 +1243,51 @@ async function generateReplyForSession(session, options = {}) {
         role: message.role,
         content: `${String(message.content || '')}${message.role === 'user' && message.aiContextText ? `\n\n${message.aiContextText}` : ''}`.slice(0, 85000),
       }));
-    const result = await callCompanionAI({ messages: contextMessages, images: attachments.images, mode: options.mode || 'chat' });
+
+    // Burbuja provisional para ir mostrando el texto mientras llega
+    removeTypingIndicator();
+    updateChatCompanionBackground('hablando');
+    const draftMessage = {
+      role: 'assistant', timestamp: Date.now(), content: '',
+      character: prefs.character, appearance: prefs.appearance, plan, streaming: true,
+    };
+    if (activeChatId === session.id && activeChatSection === 'chat' && chatEls.messages) {
+      addMessageToDOM(draftMessage, true);
+      streamBubble = chatEls.messages.querySelector('.chat-message.assistant-message:last-child .message-bubble');
+      if (streamBubble) streamBubble.classList.add('streaming-bubble');
+    }
+
+    const result = await callCompanionAIStream(
+      { messages: contextMessages, images: attachments.images, mode: options.mode || 'chat' },
+      (_piece, full) => {
+        if (streamBubble) {
+          streamBubble.textContent = full;
+          scrollChatToBottom(false);
+        }
+      },
+    );
+
     assistantMessage = {
       role: 'assistant', timestamp: Date.now(), content: result.reply,
       character: prefs.character, appearance: prefs.appearance, plan,
       usage: result.usage || null,
     };
+    if (streamBubble) {
+      streamBubble.textContent = result.reply;
+      streamBubble.classList.remove('streaming-bubble');
+    }
   } catch (error) {
     const message = error && error.message ? error.message : 'No se ha podido contactar con la IA.';
     assistantMessage = {
       role: 'assistant', timestamp: Date.now(), content: message,
       character: prefs.character, appearance: prefs.appearance, plan, failed: true,
     };
+    if (streamBubble) {
+      streamBubble.textContent = message;
+      streamBubble.classList.remove('streaming-bubble');
+      const row = streamBubble.closest('.chat-message');
+      if (row) row.remove();
+    }
     showChatToast(message, { important: true });
   } finally {
     removeTypingIndicator();
@@ -1183,8 +1299,17 @@ async function generateReplyForSession(session, options = {}) {
   saveChatSessions();
   renderRecentChats();
   if (activeChatId === session.id && activeChatSection === 'chat') {
-    // Solo añadir el mensaje nuevo (evita re-render completo de la conversación)
-    addMessageToDOM(assistantMessage, true);
+    // Si no hubo burbuja de stream (p. ej. cambió de sección), añadir el mensaje completo
+    if (!streamBubble || !streamBubble.isConnected) {
+      addMessageToDOM(assistantMessage, true);
+    } else if (assistantMessage.failed) {
+      addMessageToDOM(assistantMessage, true);
+    } else {
+      // Sustituir el nodo provisional por uno definitivo con acciones (copiar, escuchar…)
+      const provisional = streamBubble.closest('.chat-message');
+      if (provisional) provisional.remove();
+      addMessageToDOM(assistantMessage, true);
+    }
   }
   let expression = 'hablando';
   const content = String(assistantMessage.content || '');
