@@ -32,7 +32,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preload" href="styles.css" as="style">
   <link rel="preload" href="assets/logo.webp" as="image" type="image/webp">
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.webp">
+  <link rel="icon" type="image/webp" sizes="192x192" href="assets/favicon.webp">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -153,7 +153,7 @@
               <span class="select-chevron" aria-hidden="true">⌄</span>
             </button>
             <div class="model-menu" id="modelMenu" role="listbox" hidden>
-              <button type="button" role="option" class="model-option active" data-model="santitos-jr" aria-selected="true">
+              <button type="button" role="option" class="model-option active" data-model="jr" aria-selected="true">
                 <span class="model-option-icon">↯</span>
                 <span class="model-option-text">
                   <strong>Santitos Jr</strong>
@@ -184,11 +184,11 @@
         <div class="chat-welcome" id="chatWelcome">
           <div class="welcome-mark-wrap"><div class="welcome-mark-glow"></div><img src="assets/logo.webp" alt="Lobo de SantitosIA" width="120" height="120" loading="lazy" decoding="async"></div>
           <div class="welcome-eyebrow"><span class="context-dot"></span> LISTO PARA AYUDARTE</div>
-          <h1>Qué tienes en <span class="chat-gradient">mente?</span></h1>
+          <h1>¿Qué tienes en <span class="chat-gradient">mente?</span></h1>
           <p>Pregúntame lo que quieras. Podemos hablar de Minecraft, tecnología, trabajo o cualquier duda del día a día.</p>
           <p class="shortcut-hint">Atajo: <kbd>Ctrl</kbd> + <kbd>K</kbd> para un chat nuevo</p>
           <div class="suggestion-grid">
-            <button class="suggestion-card" type="button" data-prompt="Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon">⌘</span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion-card" type="button" data-prompt="¿Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon">⌘</span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow">↗</span></button>
             <button class="suggestion-card" type="button" data-prompt="Explícame este tema de forma sencilla, con un ejemplo práctico."><span class="suggestion-icon cyan-icon">✧</span><span><strong>Aprender algo</strong><small>Explicaciones claras y ejemplos</small></span><span class="suggestion-arrow">↗</span></button>
             <button class="suggestion-card" type="button" data-prompt="Ayúdame a comparar opciones y elegir la mejor para mi presupuesto."><span class="suggestion-icon blue-icon">◈</span><span><strong>Tomar una decisión</strong><small>Comparar ideas y opciones</small></span><span class="suggestion-arrow">↗</span></button>
             <button class="suggestion-card" type="button" data-prompt="Traduce este texto al español manteniendo el significado y el formato."><span class="suggestion-icon pink-icon">文</span><span><strong>Traducir un texto</strong><small>Conserva el sentido y el formato</small></span><span class="suggestion-arrow">↗</span></button>
@@ -310,7 +310,7 @@
             <li><span>✓</span> Diario privado con ayuda opcional de IA</li>
             <li><span>✓</span> Historial guardado en este navegador</li>
           </ul>
-          <button class="btn btn-outline full-width" data-open-checkout="santitos-jr">Empezar gratis</button>
+          <button class="btn btn-outline full-width" data-open-checkout="jr">Empezar gratis</button>
         </article>
         <article class="price-card price-card-featured">
           <div class="price-badge">Recomendado</div>
@@ -392,7 +392,8 @@
         </div>
         <button class="btn btn-primary full-width submit-auth" type="submit" id="authSubmit">Crear cuenta <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
-      <p class="auth-switch" id="authSwitch">Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button></p>
+      <p class="auth-switch" id="authSwitch">¿Ya tienes cuenta? <button type="button" data-open-auth="login">Inicia sesión</button></p>
+      <p class="demo-note" id="demoNote">Registro con correo y contraseña. Plan inicial: gratis.</p>
       <div class="form-message" id="formMessage" role="status"></div>
     </section>
   </div>
