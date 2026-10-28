@@ -82,11 +82,11 @@
         </button>
         <div class="account-menu" id="accountMenu" hidden>
           <div class="account-menu-heading" id="accountMenuName"></div>
-          <button type="button" data-account-action="profile"><span class="menu-symbol">◉</span>Perfil</button>
-          <button type="button" data-account-action="settings"><span class="menu-symbol">⚙</span>Configuración</button>
-          <button type="button" data-account-action="support"><span class="menu-symbol">?</span>Soporte</button>
+          <button type="button" data-account-action="profile"><span class="menu-symbol menu-symbol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Perfil</button>
+          <button type="button" data-account-action="settings"><span class="menu-symbol menu-symbol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.1 6.1l1.6 1.6M16.3 16.3l1.6 1.6M6.1 17.9l1.6-1.6M16.3 7.7l1.6-1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Configuración</button>
+          <button type="button" data-account-action="support"><span class="menu-symbol menu-symbol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.7"/><path d="M9.2 9.2a2.8 2.8 0 1 1 3.3 2.7c-.8.3-1.3.9-1.3 1.7V14.5M12 17.2h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Soporte</button>
           <div class="account-menu-divider"></div>
-          <button type="button" id="logoutBtn" class="account-logout"><span class="menu-symbol">↪</span>Cerrar sesión</button>
+          <button type="button" id="logoutBtn" class="account-logout"><span class="menu-symbol menu-symbol-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5.5H7.5A2 2 0 0 0 5.5 7.5v9A2 2 0 0 0 7.5 18.5H10M13.5 12H20M17 8.5 20.5 12 17 15.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Cerrar sesión</button>
         </div>
       </div>
     </div>
@@ -104,16 +104,16 @@
           <img src="assets/logo.webp" alt="" class="chat-brand-wolf" width="32" height="32" loading="lazy" decoding="async">
           <span>Santitos<span>IA</span></span>
         </a>
-        <button class="icon-button sidebar-collapse" id="closeChatSidebar" type="button" aria-label="Cerrar menú" title="Cerrar menú">×</button>
+        <button class="icon-button sidebar-collapse" id="closeChatSidebar" type="button" aria-label="Cerrar menú" title="Cerrar menú"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <button class="new-chat-button" id="newChatBtn" type="button"><span class="new-chat-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3.2v9.6M3.2 8h9.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Nuevo chat <kbd>Ctrl K</kbd></button>
       <nav class="chat-navigation" aria-label="Secciones del chat">
-        <button class="chat-nav-item active" type="button" data-chat-nav="chat"><span class="nav-glyph">◉</span> Chat</button>
-        <button class="chat-nav-item" type="button" data-chat-nav="history"><span class="nav-glyph">◷</span> Historial</button>
-        <button class="chat-nav-item" type="button" data-chat-nav="files"><span class="nav-glyph">▤</span> Archivos</button>
-        <button class="chat-nav-item" type="button" data-chat-nav="diary"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 7.5c-2.1-1.7-5.2-2.3-8-1.5v12c2.8-.8 5.9-.2 8 1.5m0-12c2.1-1.7 5.2-2.3 8-1.5v12c-2.8-.8-5.9-.2-8 1.5m0-12v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Mi diario</button>
-        <button class="chat-nav-item" type="button" data-chat-nav="companion"><span class="nav-glyph">✧</span> Compañero</button>
-        <button class="chat-nav-item" type="button" data-chat-nav="settings"><span class="nav-glyph">⚙</span> Configuración</button>
+        <button class="chat-nav-item active" type="button" data-chat-nav="chat"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 19.5 5 21l.8-3.5A8 8 0 1 1 12 20a7.7 7.7 0 0 1-3.5-.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 10.5h7M8.5 13.5h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span> Chat</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="history"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.5 5.5v4h4M12 8v4.5l3 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Historial</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="files"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4.5h6.5L17.5 8v11a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V6A1.5 1.5 0 0 1 7 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 4.5V8h3.5M8.5 12h7M8.5 15.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Archivos</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="diary"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 7.5c-2.1-1.7-5.2-2.3-8-1.5v12c2.8-.8 5.9-.2 8 1.5m0-12c2.1-1.7 5.2-2.3 8-1.5v12c-2.8-.8-5.9-.2-8 1.5m0-12v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Mi diario</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="companion"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 13.2 8h4.7l-3.8 2.9 1.4 4.6L12 13.2 8.5 15.5l1.4-4.6L6.1 8h4.7L12 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span> Compañero</button>
+        <button class="chat-nav-item" type="button" data-chat-nav="settings"><span class="nav-glyph nav-glyph-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.1 6.1l1.6 1.6M16.3 16.3l1.6 1.6M6.1 17.9l1.6-1.6M16.3 7.7l1.6-1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span> Configuración</button>
       </nav>
       <div class="sidebar-section-label">RECIENTES</div>
       <div class="recent-chat-list" id="recentChatList">
@@ -121,7 +121,7 @@
       </div>
       <div class="sidebar-spacer"></div>
       <div class="plan-mini-card">
-        <div class="plan-mini-icon">✦</div>
+        <div class="plan-mini-icon plan-mini-icon-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 13.4 8.5 18.5 10 13.4 11.5 12 16.8 10.6 11.5 5.5 10 10.6 8.5 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18.2 14.5 18.8 16.5 20.8 17.2 18.8 17.9 18.2 19.9 17.6 17.9 15.6 17.2 17.6 16.5 18.2 14.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
         <div class="plan-mini-copy"><strong id="chatPlanName">Santitos Jr</strong><span id="chatPlanDetail">Rápido · Gratis</span></div>
         <span class="plan-mini-badge" id="chatPlanBadge">GRATIS</span>
       </div>
@@ -140,12 +140,12 @@
 
     <div class="chat-main">
       <header class="chat-topbar">
-        <button class="icon-button open-chat-sidebar" id="openChatSidebar" type="button" aria-label="Abrir menú" title="Abrir menú">☰</button>
+        <button class="icon-button open-chat-sidebar" id="openChatSidebar" type="button" aria-label="Abrir menú" title="Abrir menú"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <div class="chat-context"><span class="context-dot"></span><span>Tu espacio de conversación</span></div>
         <div class="chat-topbar-actions">
           <div class="model-picker" id="modelPicker">
             <button type="button" class="model-picker-trigger" id="modelPickerBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Seleccionar modelo">
-              <span class="model-picker-mark" id="modelPickerMark">↯</span>
+              <span class="model-picker-mark model-picker-mark-svg" id="modelPickerMark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3.5 7.5 13h4.2L10.5 20.5 17 10.5h-4.2L13 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
               <span class="model-picker-current">
                 <span class="model-name" id="modelNameLabel">Santitos Jr</span>
                 <span class="model-badge free" id="modelBadgeLabel">Gratis</span>
@@ -154,7 +154,7 @@
             </button>
             <div class="model-menu" id="modelMenu" role="listbox" hidden>
               <button type="button" role="option" class="model-option active" data-model="jr" aria-selected="true">
-                <span class="model-option-icon">↯</span>
+                <span class="model-option-icon model-option-icon-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3.5 7.5 13h4.2L10.5 20.5 17 10.5h-4.2L13 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
                 <span class="model-option-text">
                   <strong>Santitos Jr</strong>
                   <small>Rápido y cercano</small>
@@ -162,7 +162,7 @@
                 <span class="model-option-badge free">Gratis</span>
               </button>
               <button type="button" role="option" class="model-option" data-model="pro" aria-selected="false">
-                <span class="model-option-icon">✧</span>
+                <span class="model-option-icon model-option-icon-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 13.4 8.5 18.5 10 13.4 11.5 12 16.8 10.6 11.5 5.5 10 10.6 8.5 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18.2 14.5 18.8 16.5 20.8 17.2 18.8 17.9 18.2 19.9 17.6 17.9 15.6 17.2 17.6 16.5 18.2 14.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="model-option-text">
                   <strong>Santitos</strong>
                   <small>Modelo avanzado · Próximamente</small>
@@ -188,10 +188,10 @@
           <p>Pregúntame lo que quieras. Podemos hablar de Minecraft, tecnología, trabajo o cualquier duda del día a día.</p>
           <p class="shortcut-hint">Atajo: <kbd>Ctrl</kbd> + <kbd>K</kbd> para un chat nuevo</p>
           <div class="suggestion-grid">
-            <button class="suggestion-card" type="button" data-prompt="¿Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon">⌘</span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion-card" type="button" data-prompt="Explícame este tema de forma sencilla, con un ejemplo práctico."><span class="suggestion-icon cyan-icon">✧</span><span><strong>Aprender algo</strong><small>Explicaciones claras y ejemplos</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion-card" type="button" data-prompt="Ayúdame a comparar opciones y elegir la mejor para mi presupuesto."><span class="suggestion-icon blue-icon">◈</span><span><strong>Tomar una decisión</strong><small>Comparar ideas y opciones</small></span><span class="suggestion-arrow">↗</span></button>
-            <button class="suggestion-card" type="button" data-prompt="Traduce este texto al español manteniendo el significado y el formato."><span class="suggestion-icon pink-icon">文</span><span><strong>Traducir un texto</strong><small>Conserva el sentido y el formato</small></span><span class="suggestion-arrow">↗</span></button>
+            <button class="suggestion-card" type="button" data-prompt="¿Cómo puedo crear una economía en un servidor de Minecraft?"><span class="suggestion-icon purple-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 20 8v8l-8 4.5L4 16V8l8-4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 12.2 20 8M12 12.2 4 8M12 12.2V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span><strong>Minecraft</strong><small>Plugins, servidores y comandos</small></span><span class="suggestion-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M10 7h7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+            <button class="suggestion-card" type="button" data-prompt="Explícame este tema de forma sencilla, con un ejemplo práctico."><span class="suggestion-icon cyan-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 18.5h6M10.5 18.5 10 15h4l-.5 3.5M12 4.5a5 5 0 0 1 2.8 9.1V15h-5.6v-1.4A5 5 0 0 1 12 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>Aprender algo</strong><small>Explicaciones claras y ejemplos</small></span><span class="suggestion-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M10 7h7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+            <button class="suggestion-card" type="button" data-prompt="Ayúdame a comparar opciones y elegir la mejor para mi presupuesto."><span class="suggestion-icon blue-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4.5v5a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v2M8 9.5H5.5M16 17.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="4.5" r="1.6" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="19.5" r="1.6" stroke="currentColor" stroke-width="1.5"/></svg></span><span><strong>Tomar una decisión</strong><small>Comparar ideas y opciones</small></span><span class="suggestion-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M10 7h7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+            <button class="suggestion-card" type="button" data-prompt="Traduce este texto al español manteniendo el significado y el formato."><span class="suggestion-icon pink-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 6.5h9M9 6.5s0 5.5-4.5 8.5M5.5 10.5c1.8 1.4 4.2 2.5 7 2.5M12.5 19.5l2.2-5.5 2.2 5.5M13.3 17.5h2.8M16.5 6.5h3.5A1.5 1.5 0 0 1 21.5 8v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>Traducir un texto</strong><small>Conserva el sentido y el formato</small></span><span class="suggestion-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M10 7h7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
           </div>
         </div>
         <div class="chat-messages" id="chatMessages" aria-live="polite" aria-label="Mensajes de la conversación"></div>
@@ -235,12 +235,12 @@
           <img src="assets/logo.webp" alt="Cabeza de lobo neón de SantitosIA" width="310" height="310" loading="lazy" decoding="async">
         </div>
         <div class="floating-card card-top">
-          <span class="mini-icon purple">✦</span>
+          <span class="mini-icon purple mini-icon-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 13.4 8.5 18.5 10 13.4 11.5 12 16.8 10.6 11.5 5.5 10 10.6 8.5 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18.2 14.5 18.8 16.5 20.8 17.2 18.8 17.9 18.2 19.9 17.6 17.9 15.6 17.2 17.6 16.5 18.2 14.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
           <span><b>Compañeros virtuales</b><small>Elige personalidad y apariencia</small></span>
           <span class="live-pill">IA</span>
         </div>
         <div class="floating-card card-bottom">
-          <span class="mini-icon cyan">↯</span>
+          <span class="mini-icon cyan mini-icon-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3.5 7.5 13h4.2L10.5 20.5 17 10.5h-4.2L13 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
           <span><b>Respuestas al instante</b><small>Para tus dudas del día a día</small></span>
           <span class="live-dot"></span>
         </div>
@@ -257,7 +257,7 @@
       <div class="model-grid">
         <article class="model-card jr-card">
           <div class="model-top">
-            <div class="model-symbol jr-symbol">↯</div>
+            <div class="model-symbol jr-symbol model-symbol-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3.5 7.5 13h4.2L10.5 20.5 17 10.5h-4.2L13 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
             <span class="tag tag-free">GRATIS</span>
           </div>
           <h3>Santitos Jr</h3>
@@ -272,7 +272,7 @@
         </article>
         <article class="model-card pro-card">
           <div class="model-top">
-            <div class="model-symbol pro-symbol">✧</div>
+            <div class="model-symbol pro-symbol model-symbol-svg"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 13.4 8.5 18.5 10 13.4 11.5 12 16.8 10.6 11.5 5.5 10 10.6 8.5 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18.2 14.5 18.8 16.5 20.8 17.2 18.8 17.9 18.2 19.9 17.6 17.9 15.6 17.2 17.6 16.5 18.2 14.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
             <span class="tag tag-pro">PRÓXIMAMENTE</span>
           </div>
           <h3>Santitos</h3>
@@ -338,22 +338,22 @@
       </div>
       <div class="feature-grid">
         <article class="feature-card">
-          <span class="feature-icon purple">⌘</span>
+          <span class="feature-icon purple feature-icon-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 19.5 5 21l.8-3.5A8 8 0 1 1 12 20a7.7 7.7 0 0 1-3.5-.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 10.5h7M8.5 13.5h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
           <h3>Conversaciones con contexto</h3>
           <p>Retoma tus conversaciones y mantén tus ideas organizadas en tu cuenta.</p>
         </article>
         <article class="feature-card">
-          <span class="feature-icon cyan">✧</span>
+          <span class="feature-icon cyan feature-icon-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 13.2 8h4.7l-3.8 2.9 1.4 4.6L12 13.2 8.5 15.5l1.4-4.6L6.1 8h4.7L12 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
           <h3>Tu compañero, a tu manera</h3>
           <p>Elige entre Santitos, Santitos Jr. y Syntia, y cambia entre la forma humana y la de lobo.</p>
         </article>
         <article class="feature-card">
-          <span class="feature-icon pink">▤</span>
+          <span class="feature-icon pink feature-icon-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4.5h6.5L17.5 8v11a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V6A1.5 1.5 0 0 1 7 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 4.5V8h3.5M8.5 12h7M8.5 15.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <h3>Archivos y traducciones</h3>
           <p>Envía archivos de texto compatibles e imágenes pequeñas para analizarlos y traducir código, incluidos plugins de Minecraft.</p>
         </article>
         <article class="feature-card">
-          <span class="feature-icon blue">♡</span>
+          <span class="feature-icon blue feature-icon-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19.5s-6.5-4.1-8.4-7.3A4.6 4.6 0 0 1 12 6.8a4.6 4.6 0 0 1 8.4 5.4C18.5 15.4 12 19.5 12 19.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
           <h3>Diario personal</h3>
           <p>Escribe tus propias entradas o pide a la IA que prepare un borrador. Tú decides qué compartes y qué mantienes privado.</p>
         </article>
@@ -374,7 +374,7 @@
 
   <div class="modal-backdrop" id="authModal" aria-hidden="true">
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <button class="modal-close" id="closeAuth" aria-label="Cerrar">×</button>
+      <button class="modal-close" id="closeAuth" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <div class="auth-logo">
         <span class="brand-mark wolf-brand"><img src="assets/logo.webp" alt="" width="60" height="60" loading="lazy" decoding="async"></span>
       </div>
@@ -400,7 +400,7 @@
 
   <div class="modal-backdrop checkout-backdrop" id="checkoutModal" aria-hidden="true">
     <section class="auth-modal checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
-      <button class="modal-close" id="closeCheckout" type="button" aria-label="Cerrar">×</button>
+      <button class="modal-close" id="closeCheckout" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <div class="eyebrow">PAGO</div>
       <h2 id="checkoutTitle">Confirmar plan</h2>
       <p class="auth-subtitle" id="checkoutNote">Revisa tu plan y completa el pago de forma segura.</p>
