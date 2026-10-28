@@ -390,16 +390,55 @@ let aiRequestInProgress = false;
 const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}`;
 const PREMIUM_PLAN_ENABLED = false;
 const CHARACTER_INFO = {
-  santitos: { name: 'SantitosIA', selectorName: 'SantitosIA · Masculino', description: 'Directo, maduro y con carácter', icon: '✦', color: 'santitos', folder: 'santitos' },
-  jr: { name: 'Santitos Jr.', selectorName: 'Santitos Jr.', description: 'Joven, cercano y expresivo', icon: '✧', color: 'jr', folder: 'santitos' },
-  syntia: { name: 'SantitosIA', selectorName: 'SantitosIA · Femenino', description: 'Ingeniosa, cercana y resolutiva', icon: '✦', color: 'syntia', folder: 'syntia' },
+  santitos: {
+    name: 'Santitos',
+    selectorName: 'Santitos',
+    description: 'Directo, maduro y con carácter',
+    icon: '✦',
+    color: 'santitos',
+    folder: 'santitos',
+    requiresPremium: true,
+  },
+  jr: {
+    name: 'Santitos Jr.',
+    selectorName: 'Santitos Jr.',
+    description: 'Joven, cercano y expresivo',
+    icon: '✧',
+    color: 'jr',
+    folder: 'santitos',
+    requiresPremium: false,
+  },
+  syntia: {
+    name: 'Syntia',
+    selectorName: 'Syntia',
+    description: 'Ingeniosa, cercana y resolutiva',
+    icon: '✦',
+    color: 'syntia',
+    folder: 'syntia',
+    requiresPremium: false,
+  },
 };
+
+function canUseCharacter(characterId) {
+  const info = CHARACTER_INFO[characterId];
+  if (!info) return false;
+  if (!info.requiresPremium) return true;
+  return !!(PREMIUM_PLAN_ENABLED && hasPremiumPlan());
+}
+
+function resolveCompanionCharacter(characterId) {
+  if (canUseCharacter(characterId)) return characterId;
+  // Fallback gratuito si el avatar Premium no está disponible
+  return 'jr';
+}
 const CHARACTER_EXPRESSIONS = ['reposo', 'pensando', 'hablando', 'sonrisa'];
 function getCompanionPrefs() {
   let value = {};
   try { value = JSON.parse(safeRead(COMPANION_PREFS_KEY()) || '{}') || {}; } catch (_) {}
   return {
-    character: Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'santitos',
+    character: resolveCompanionCharacter(
+      Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'jr'
+    ),
     appearance: value.appearance === 'wolf' ? 'wolf' : 'human',
     autoVoice: value.autoVoice === true,
     voiceURI: typeof value.voiceURI === 'string' ? value.voiceURI : '',
@@ -408,12 +447,13 @@ function getCompanionPrefs() {
 function saveCompanionPrefs(next) {
   const current = getCompanionPrefs();
   const updated = { ...current, ...next };
+  updated.character = resolveCompanionCharacter(updated.character);
   safeSave(COMPANION_PREFS_KEY(), JSON.stringify(updated));
   preloadCharacterExpressions(updated.character);
   updateChatCompanionBackground('reposo');
   return updated;
 }
-function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.santitos; }
+function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.webp';
   const CACHE = 'v7';
@@ -451,8 +491,8 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   if (chatEls.stage) {
     chatEls.stage.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
     chatEls.stage.dataset.companionExpression = validExpr;
-    // Solo en una conversación abierta (no en pantalla de chat nuevo / bienvenida)
-    setCompanionVisible(activeChatSection === 'chat' && !!activeChatId);
+    // Visible solo en la sección de chat
+    setCompanionVisible(activeChatSection === 'chat');
   }
   if (chatEls.messages) chatEls.messages.style.removeProperty('--chat-companion-image');
   if (companionExpressionTimer) {
@@ -866,8 +906,8 @@ function setActiveNav(section) {
 function showChatWelcome() {
   setActiveNav('chat');
   activeChatSection = 'chat';
-  activeChatId = null;
-  setCompanionVisible(false);
+  setCompanionVisible(true);
+  updateChatCompanionBackground(currentCompanionExpression || 'reposo');
   if (chatEls.welcome) {
     chatEls.welcome.hidden = false;
     chatEls.welcome.removeAttribute('aria-hidden');
@@ -1632,7 +1672,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
 function renderCompanionPanel(panel, kicker, heading, description) {
   kicker.textContent = 'PERSONALIZA TU COMPAÑERO';
   heading.textContent = 'Elige tu avatar';
-  description.textContent = 'Selecciona la apariencia de tu asistente. El avatar se mostrará junto a sus respuestas y puedes cambiarlo cuando quieras.';
+  description.textContent = 'Elige cómo se presenta tu asistente. Syntia y Santitos Jr. son gratis; Santitos requiere Premium.';
 
   const prefs = getCompanionPrefs();
   const card = document.createElement('div');
@@ -1659,16 +1699,18 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   const selectorTitle = document.createElement('strong');
   selectorTitle.textContent = 'Tu asistente';
   const selectorHelp = document.createElement('span');
-  selectorHelp.textContent = '3 avatares disponibles';
+  selectorHelp.textContent = PREMIUM_PLAN_ENABLED && hasPremiumPlan()
+    ? '3 avatares disponibles'
+    : '2 avatares gratis · 1 Premium';
   selectorHeading.append(selectorTitle, selectorHelp);
 
   const characterGrid = document.createElement('div');
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
   const characterChoices = [
-    { id: 'santitos', label: 'SantitosIA', type: 'Masculino', detail: 'Directo y resolutivo' },
-    { id: 'syntia', label: 'SantitosIA', type: 'Femenino', detail: 'Cercana e ingeniosa' },
-    { id: 'jr', label: 'Santitos Jr.', type: 'Joven', detail: 'Expresivo y desenfadado' },
+    { id: 'jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
+    { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
+    { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
   ];
 
   const appearanceSelect = document.createElement('select');
@@ -1708,10 +1750,10 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     const info = getCharacterInfo(current.character);
     name.textContent = info.name;
     const characterDescription = current.character === 'santitos'
-      ? 'Avatar masculino · directo, maduro y con carácter'
+      ? 'Santitos Premium · directo, maduro y con carácter'
       : current.character === 'syntia'
-        ? 'Avatar femenino · cercana, ingeniosa y resolutiva'
-        : 'Avatar juvenil · expresivo y desenfadado';
+        ? 'Syntia · cercana, ingeniosa y resolutiva'
+        : 'Santitos Jr. · expresivo y desenfadado';
     detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : characterDescription}`;
     avatar.className = `companion-preview-avatar companion-avatar-${info.color}${current.appearance === 'wolf' ? ' companion-preview-wolf' : ''}`;
     avatar.replaceChildren();
@@ -1736,11 +1778,15 @@ function renderCompanionPanel(panel, kicker, heading, description) {
 
   characterChoices.forEach((choice) => {
     const info = getCharacterInfo(choice.id);
+    const locked = !!(choice.premium || info.requiresPremium) && !canUseCharacter(choice.id);
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `companion-character-option companion-option-${info.color}`;
+    button.className = `companion-character-option companion-option-${info.color}${locked ? ' is-locked' : ''}`;
     button.dataset.character = choice.id;
-    button.setAttribute('aria-label', `${choice.label}, ${choice.type}`);
+    button.setAttribute('aria-label', locked
+      ? `${choice.label}, Premium bloqueado`
+      : `${choice.label}, ${choice.type}`);
+    if (locked) button.title = 'Disponible con Santitos Premium';
     const imageFrame = document.createElement('span'); imageFrame.className = 'companion-character-image';
     const image = document.createElement('img');
     image.src = getCharacterImagePath(choice.id, 'reposo', 'human');
@@ -1749,14 +1795,31 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     image.decoding = 'async';
     image.className = 'companion-face';
     imageFrame.append(image);
+    if (locked) {
+      const lock = document.createElement('span');
+      lock.className = 'companion-character-lock';
+      lock.setAttribute('aria-hidden', 'true');
+      lock.textContent = '🔒';
+      imageFrame.append(lock);
+    }
     const copy = document.createElement('span'); copy.className = 'companion-character-copy';
     const title = document.createElement('strong'); title.textContent = choice.label;
-    const type = document.createElement('small'); type.className = 'companion-character-type'; type.textContent = choice.type;
-    const text = document.createElement('span'); text.className = 'companion-character-detail'; text.textContent = choice.detail;
+    const type = document.createElement('small'); type.className = 'companion-character-type';
+    type.textContent = locked ? 'Premium' : choice.type;
+    if (choice.premium || info.requiresPremium) type.classList.add('is-premium-tag');
+    const text = document.createElement('span'); text.className = 'companion-character-detail';
+    text.textContent = locked ? 'Requiere plan Premium' : choice.detail;
     copy.append(title, type, text);
     const check = document.createElement('span'); check.className = 'companion-character-check'; check.setAttribute('aria-hidden', 'true');
     button.append(imageFrame, copy, check);
     button.addEventListener('click', () => {
+      if (!canUseCharacter(choice.id)) {
+        showChatToast('Santitos (Premium) solo está disponible con el plan Premium.', { important: true });
+        if (PREMIUM_PLAN_ENABLED && typeof requirePremiumOrCheckout === 'function') {
+          requirePremiumOrCheckout();
+        }
+        return;
+      }
       saveCompanionPrefs({ character: choice.id });
       refreshPreview();
     });
@@ -2170,6 +2233,8 @@ function openChatSection(section) {
   const route = routes[section] || 'chat';
   const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
+    setCompanionVisible(true);
+    updateChatCompanionBackground(currentCompanionExpression || 'reposo');
     if (window.location.pathname.replace(/\/+$/, '') !== '/SantitosIA/chat' || window.location.hash) {
       window.history.pushState({ section }, '', target);
     }
