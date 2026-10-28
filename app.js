@@ -2114,7 +2114,7 @@ function safeSave(key, value) { try { window.localStorage.setItem(key, value); }
 function closeChatSidebar() { if (chatEls.app) chatEls.app.classList.remove('sidebar-open'); }
 function openChatSection(section) {
   closeChatSidebar();
-  const routes = { chat: 'chat', history: 'history', files: 'Files', diary: 'diary', companion: 'companion', settings: 'Configuration', profile: 'Profile', support: 'Support' };
+  const routes = { chat: 'chat', history: 'history', files: 'files', diary: 'diary', companion: 'companion', settings: 'configuration', profile: 'profile', support: 'support' };
   const route = routes[section] || 'chat';
   const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
