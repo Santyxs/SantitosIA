@@ -414,27 +414,46 @@ function saveCompanionPrefs(next) {
   return updated;
 }
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.santitos; }
-function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
-  if (appearance === 'wolf') return 'assets/logo.png';
-  const CACHE = 'v5';
+function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human', format = 'webp') {
+  if (appearance === 'wolf') return format === 'webp' ? 'assets/logo.webp' : 'assets/logo.png';
+  const CACHE = 'v6';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
   const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
-  return `assets/characters/${folder}/${expr}.png?${CACHE}`;
+  const ext = format === 'png' ? 'png' : 'webp';
+  return `assets/characters/${folder}/${expr}.${ext}?${CACHE}`;
+}
+function characterPictureMarkup(characterId, expression = 'reposo', appearance = 'human', className = 'companion-face', extraAttrs = '') {
+  const webp = getCharacterImagePath(characterId, expression, appearance, 'webp');
+  const png = getCharacterImagePath(characterId, expression, appearance, 'png');
+  const fallback = appearance === 'wolf' ? 'assets/logo.png' : 'assets/logo.webp';
+  return `<picture class="${className}-wrap"><source srcset="${webp}" type="image/webp"><img src="${png}" alt="" class="${className}" data-expression="${expression}" decoding="async" loading="lazy" ${extraAttrs} onerror="this.onerror=null;this.src='${fallback}';" /></picture>`;
 }
 function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
-  const src = getCharacterImagePath(characterId, expression, appearance);
-  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" onerror="this.onerror=null;this.src='assets/logo.png';" />`;
+  return characterPictureMarkup(characterId, expression, appearance, 'companion-face');
 }
 let companionExpressionTimer = null;
 let currentCompanionExpression = 'reposo';
 
+let supportsWebp = true;
+(function detectWebp() {
+  try {
+    const img = new Image();
+    img.onload = img.onerror = function () { supportsWebp = img.height === 1; };
+    img.src = 'data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=';
+  } catch (_) { supportsWebp = false; }
+})();
+function preferredImageFormat() { return supportsWebp ? 'webp' : 'png'; }
+
 function preloadCharacterExpressions(characterId) {
-  const info = getCharacterInfo(characterId);
+  const fmt = preferredImageFormat();
   CHARACTER_EXPRESSIONS.forEach((expr) => {
     const img = new Image();
-    img.src = getCharacterImagePath(characterId, expr, 'human');
+    img.src = getCharacterImagePath(characterId, expr, 'human', fmt);
   });
+  // Logo en ambos formatos para el modo lobo / fallbacks
+  const logo = new Image();
+  logo.src = supportsWebp ? 'assets/logo.webp' : 'assets/logo.png';
 }
 
 function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) {
@@ -442,9 +461,10 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   const prefs = getCompanionPrefs();
   const validExpr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
   currentCompanionExpression = validExpr;
+  const fmt = preferredImageFormat();
   const bgUrl = prefs.appearance === 'wolf'
-    ? 'assets/logo.png'
-    : getCharacterImagePath(prefs.character, validExpr, 'human');
+    ? (fmt === 'webp' ? 'assets/logo.webp' : 'assets/logo.png')
+    : getCharacterImagePath(prefs.character, validExpr, 'human', fmt);
   chatEls.messages.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
   if (chatEls.stage) {
     chatEls.stage.dataset.companionExpression = validExpr;
@@ -1514,9 +1534,11 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : characterDescription}`;
     avatar.className = `companion-preview-avatar companion-avatar-${info.color}${current.appearance === 'wolf' ? ' companion-preview-wolf' : ''}`;
     avatar.replaceChildren();
+    const fmt = preferredImageFormat();
     const img = document.createElement('img');
-    img.src = getCharacterImagePath(current.character, 'reposo', current.appearance);
+    img.src = getCharacterImagePath(current.character, 'reposo', current.appearance, fmt);
     img.alt = `${info.selectorName || info.name}`;
+    img.decoding = 'async';
     avatar.append(img);
     characterButtons.forEach((button, id) => {
       const selected = id === current.character;
@@ -1526,7 +1548,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
       if (mark) mark.textContent = selected ? '✓' : '+';
       const image = button.querySelector('img');
       if (image) {
-        image.src = getCharacterImagePath(id, 'reposo', current.appearance);
+        image.src = getCharacterImagePath(id, 'reposo', current.appearance, fmt);
         image.alt = `${getCharacterInfo(id).selectorName || getCharacterInfo(id).name}`;
       }
     });
@@ -1540,7 +1562,12 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     button.dataset.character = choice.id;
     button.setAttribute('aria-label', `${choice.label}, ${choice.type}`);
     const imageFrame = document.createElement('span'); imageFrame.className = 'companion-character-image';
-    const image = document.createElement('img'); image.src = getCharacterImagePath(choice.id, 'reposo', 'human'); image.alt = ''; image.loading = 'lazy'; image.className = 'companion-face';
+    const image = document.createElement('img');
+    image.src = getCharacterImagePath(choice.id, 'reposo', 'human', preferredImageFormat());
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.className = 'companion-face';
     imageFrame.append(image);
     const copy = document.createElement('span'); copy.className = 'companion-character-copy';
     const title = document.createElement('strong'); title.textContent = choice.label;
