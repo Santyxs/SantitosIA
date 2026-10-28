@@ -1797,22 +1797,3 @@ img{
   content-visibility:auto;
 }
 
-
-/* WebP <picture> inside brand marks */
-.brand-mark picture,
-.brand-mark picture img,
-.chat-brand picture,
-.chat-brand picture img,
-.welcome-mark-wrap picture,
-.welcome-mark-wrap picture img,
-.wolf-emblem picture,
-.wolf-emblem picture img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  border-radius: inherit;
-}
-.companion-face-wrap {
-  display: contents;
-}
