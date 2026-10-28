@@ -1708,9 +1708,9 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
   const characterChoices = [
+    { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
     { id: 'jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
     { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
-    { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
   ];
 
   const appearanceSelect = document.createElement('select');
