@@ -1903,3 +1903,68 @@ img{
   /* no debería seleccionarse, pero por si acaso */
   box-shadow: none;
 }
+
+
+/* Unified SVG icons */
+.nav-glyph-icon,
+.menu-symbol-icon,
+.model-option-icon-svg,
+.model-picker-mark-svg,
+.plan-mini-icon-svg,
+.feature-icon-svg,
+.mini-icon-svg,
+.model-symbol-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-glyph-icon svg,
+.menu-symbol-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.menu-symbol-icon {
+  width: 18px;
+  margin-right: 2px;
+}
+.suggestion-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.suggestion-arrow svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  opacity: 0.75;
+}
+.feature-icon-svg svg,
+.model-symbol-svg svg,
+.plan-mini-icon-svg svg,
+.mini-icon-svg svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.model-picker-mark-svg svg,
+.model-option-icon-svg svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.sidebar-collapse svg,
+.open-chat-sidebar svg {
+  width: 18px;
+  height: 18px;
+}
+.modal-close svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
