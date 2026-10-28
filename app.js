@@ -788,7 +788,7 @@ function updatePlanCard() {
     chatEls.modelBadgeLabel.textContent = pro ? 'Premium' : 'Gratis';
     chatEls.modelBadgeLabel.className = 'model-badge ' + (pro ? 'pro' : 'free');
   }
-  if (chatEls.modelPickerMark) chatEls.modelPickerMark.textContent = pro ? '✧' : '↯';
+  if (chatEls.modelPickerMark) chatEls.modelPickerMark.innerHTML = pro ? '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 13.4 8.5 18.5 10 13.4 11.5 12 16.8 10.6 11.5 5.5 10 10.6 8.5 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18.2 14.5 18.8 16.5 20.8 17.2 18.8 17.9 18.2 19.9 17.6 17.9 15.6 17.2 17.6 16.5 18.2 14.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3.5 7.5 13h4.2L10.5 20.5 17 10.5h-4.2L13 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
   if (chatEls.modelMenu) {
     const unlocked = PREMIUM_PLAN_ENABLED && hasPremiumPlan();
     chatEls.modelMenu.querySelectorAll('.model-option').forEach((opt) => {
@@ -1708,9 +1708,9 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
   const characterChoices = [
-    { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
     { id: 'jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
     { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
+    { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
   ];
 
   const appearanceSelect = document.createElement('select');
