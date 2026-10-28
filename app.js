@@ -438,16 +438,23 @@ function preloadCharacterExpressions(characterId) {
   logo.src = 'assets/logo.webp';
 }
 
+function setCompanionVisible(visible) {
+  if (!chatEls.stage) return;
+  chatEls.stage.classList.toggle('hide-companion', !visible);
+}
+
 function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) {
-  if (!chatEls.messages) return;
   const prefs = getCompanionPrefs();
   const validExpr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
   currentCompanionExpression = validExpr;
   const bgUrl = getCharacterImagePath(prefs.character, validExpr, prefs.appearance);
-  const target = chatEls.stage || chatEls.messages;
-  if (target) target.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
+  if (chatEls.stage) {
+    chatEls.stage.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
+    chatEls.stage.dataset.companionExpression = validExpr;
+    // Visible solo en la sección de chat
+    setCompanionVisible(activeChatSection === 'chat');
+  }
   if (chatEls.messages) chatEls.messages.style.removeProperty('--chat-companion-image');
-  if (chatEls.stage) chatEls.stage.dataset.companionExpression = validExpr;
   if (companionExpressionTimer) {
     window.clearTimeout(companionExpressionTimer);
     companionExpressionTimer = null;
@@ -858,6 +865,9 @@ function setActiveNav(section) {
 }
 function showChatWelcome() {
   setActiveNav('chat');
+  activeChatSection = 'chat';
+  setCompanionVisible(true);
+  updateChatCompanionBackground(currentCompanionExpression || 'reposo');
   if (chatEls.welcome) {
     chatEls.welcome.hidden = false;
     chatEls.welcome.removeAttribute('aria-hidden');
@@ -870,7 +880,10 @@ function renderConversation(id) {
   const session = chatSessions.find((item) => item.id === id);
   if (!session) { showChatWelcome(); return; }
   activeChatId = id;
+  activeChatSection = 'chat';
   setActiveNav('chat');
+  setCompanionVisible(true);
+  updateChatCompanionBackground(currentCompanionExpression || 'reposo');
   if (chatEls.welcome) {
     chatEls.welcome.hidden = true;
     chatEls.welcome.setAttribute('aria-hidden', 'true');
@@ -1735,6 +1748,8 @@ function renderCompanionPanel(panel, kicker, heading, description) {
 }
 function showPanel(section) {
   setActiveNav(section);
+  activeChatSection = section || activeChatSection;
+  setCompanionVisible(false);
   if (chatEls.welcome) {
     chatEls.welcome.hidden = true;
     chatEls.welcome.setAttribute('aria-hidden', 'true');
@@ -2114,16 +2129,20 @@ function safeSave(key, value) { try { window.localStorage.setItem(key, value); }
 function closeChatSidebar() { if (chatEls.app) chatEls.app.classList.remove('sidebar-open'); }
 function openChatSection(section) {
   closeChatSidebar();
+  activeChatSection = section || 'chat';
   const routes = { chat: 'chat', history: 'history', files: 'files', diary: 'diary', companion: 'companion', settings: 'configuration', profile: 'profile', support: 'support' };
   const route = routes[section] || 'chat';
   const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
+    setCompanionVisible(true);
+    updateChatCompanionBackground(currentCompanionExpression || 'reposo');
     if (window.location.pathname.replace(/\/+$/, '') !== '/SantitosIA/chat' || window.location.hash) {
       window.history.pushState({ section }, '', target);
     }
     const session = activeSession();
     if (session) renderConversation(session.id); else showChatWelcome();
   } else {
+    setCompanionVisible(false);
     window.history.pushState({ section }, '', target);
     showPanel(section);
   }
