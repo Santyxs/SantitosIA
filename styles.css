@@ -1797,3 +1797,19 @@ img{
   content-visibility:auto;
 }
 
+
+/* Streaming reply cursor */
+.message-bubble.streaming-bubble::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: currentColor;
+  opacity: 0.55;
+  animation: stream-caret 0.9s steps(1) infinite;
+}
+@keyframes stream-caret {
+  50% { opacity: 0; }
+}
