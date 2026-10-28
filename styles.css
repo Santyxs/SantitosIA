@@ -1813,3 +1813,8 @@ img{
 @keyframes stream-caret {
   50% { opacity: 0; }
 }
+
+.journal-textarea.streaming-input {
+  outline: 1px solid rgba(155, 123, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(155, 123, 255, 0.12);
+}
