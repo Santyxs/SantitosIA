@@ -70,15 +70,16 @@ revoke all on public.daily_ai_usage from anon, authenticated;
 
 drop function if exists public.consume_ai_daily_limit(integer);
 drop function if exists public.consume_ai_daily_limit();
+drop function if exists public.consume_ai_daily_limit(uuid);
 
-create or replace function public.consume_ai_daily_limit()
+create or replace function public.consume_ai_daily_limit(p_user_id uuid)
 returns table (allowed boolean, used integer, daily_limit integer)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_user_id uuid := auth.uid();
+  v_user_id uuid := p_user_id;
   v_count integer;
   v_today date := (timezone('utc', now()))::date;
   -- En esta primera versión todos los perfiles tienen el mismo límite.
@@ -86,7 +87,7 @@ declare
   v_limit integer := 5;
 begin
   if v_user_id is null then
-    raise exception 'Authentication required';
+    raise exception 'User id required';
   end if;
 
   insert into public.daily_ai_usage (user_id, usage_date, request_count)
@@ -107,8 +108,9 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_ai_daily_limit() from public, anon;
-grant execute on function public.consume_ai_daily_limit() to authenticated;
+-- Solo el backend (service_role) puede ejecutarla; no debe estar en la API de usuarios.
+revoke all on function public.consume_ai_daily_limit(uuid) from public, anon, authenticated;
+grant execute on function public.consume_ai_daily_limit(uuid) to service_role;
 
 
 -- Impide que un usuario se otorgue un plan de pago modificando su perfil desde el navegador.
