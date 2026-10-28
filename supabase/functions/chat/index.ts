@@ -193,12 +193,25 @@ Deno.serve(async (req) => {
     }
   }
 
+  // La cuota solo puede consumirse desde service_role (no vía /rest/v1/rpc del cliente).
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceRoleKey) {
+    return jsonResponse({
+      error: "Falta SUPABASE_SERVICE_ROLE_KEY en los secretos de la función.",
+    }, 503);
+  }
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
   const { data: quotaRows, error: quotaError } =
-    await userClient.rpc("consume_ai_daily_limit");
+    await adminClient.rpc("consume_ai_daily_limit", { p_user_id: user.id });
 
   if (quotaError) {
+    console.error("quota error:", quotaError.message);
     return jsonResponse({
-      error: "No se pudo comprobar tu límite diario. Ejecuta la migración SQL incluida en el ZIP.",
+      error: "No se pudo comprobar tu límite diario. Aplica la migración SQL de cuota en Supabase.",
     }, 503);
   }
 
