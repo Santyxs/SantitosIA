@@ -444,10 +444,10 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   const validExpr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
   currentCompanionExpression = validExpr;
   const bgUrl = getCharacterImagePath(prefs.character, validExpr, prefs.appearance);
-  chatEls.messages.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
-  if (chatEls.stage) {
-    chatEls.stage.dataset.companionExpression = validExpr;
-  }
+  const target = chatEls.stage || chatEls.messages;
+  if (target) target.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
+  if (chatEls.messages) chatEls.messages.style.removeProperty('--chat-companion-image');
+  if (chatEls.stage) chatEls.stage.dataset.companionExpression = validExpr;
   if (companionExpressionTimer) {
     window.clearTimeout(companionExpressionTimer);
     companionExpressionTimer = null;
