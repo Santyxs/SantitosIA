@@ -1,5 +1,6 @@
 -- SantitosIA: diario personal con RLS y cuota diaria de IA.
 -- Ejecutar una sola vez desde Supabase SQL Editor o mediante Supabase CLI.
+-- Nota: current_date usa la zona horaria del servidor de Supabase (normalmente UTC).
 
 create table if not exists public.journal_entries (
   id uuid primary key default gen_random_uuid(),
@@ -59,7 +60,7 @@ create trigger journal_entries_set_updated_at
 -- La tabla de cuota no es legible/escribible directamente desde el navegador.
 create table if not exists public.daily_ai_usage (
   user_id uuid not null references auth.users(id) on delete cascade,
-  usage_date date not null default current_date,
+  usage_date date not null default (timezone('utc', now()))::date,
   request_count integer not null default 0 check (request_count >= 0),
   primary key (user_id, usage_date)
 );
@@ -68,6 +69,7 @@ alter table public.daily_ai_usage enable row level security;
 revoke all on public.daily_ai_usage from anon, authenticated;
 
 drop function if exists public.consume_ai_daily_limit(integer);
+drop function if exists public.consume_ai_daily_limit();
 
 create or replace function public.consume_ai_daily_limit()
 returns table (allowed boolean, used integer, daily_limit integer)
@@ -78,6 +80,7 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_count integer;
+  v_today date := (timezone('utc', now()))::date;
   -- En esta primera versión todos los perfiles tienen el mismo límite.
   -- Premium permanece desactivado hasta conectar pagos verificados en servidor.
   v_limit integer := 5;
@@ -87,7 +90,7 @@ begin
   end if;
 
   insert into public.daily_ai_usage (user_id, usage_date, request_count)
-  values (v_user_id, current_date, 1)
+  values (v_user_id, v_today, 1)
   on conflict (user_id, usage_date)
   do update set request_count = public.daily_ai_usage.request_count + 1
     where public.daily_ai_usage.request_count < v_limit
@@ -96,7 +99,7 @@ begin
   if v_count is null then
     select d.request_count into v_count
       from public.daily_ai_usage d
-      where d.user_id = v_user_id and d.usage_date = current_date;
+      where d.user_id = v_user_id and d.usage_date = v_today;
     return query select false, coalesce(v_count, 0), v_limit;
   else
     return query select true, v_count, v_limit;
