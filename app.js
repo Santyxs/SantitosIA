@@ -451,8 +451,8 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   if (chatEls.stage) {
     chatEls.stage.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
     chatEls.stage.dataset.companionExpression = validExpr;
-    // Visible solo en la sección de chat
-    setCompanionVisible(activeChatSection === 'chat');
+    // Solo en una conversación abierta (no en pantalla de chat nuevo / bienvenida)
+    setCompanionVisible(activeChatSection === 'chat' && !!activeChatId);
   }
   if (chatEls.messages) chatEls.messages.style.removeProperty('--chat-companion-image');
   if (companionExpressionTimer) {
@@ -866,8 +866,8 @@ function setActiveNav(section) {
 function showChatWelcome() {
   setActiveNav('chat');
   activeChatSection = 'chat';
-  setCompanionVisible(true);
-  updateChatCompanionBackground(currentCompanionExpression || 'reposo');
+  activeChatId = null;
+  setCompanionVisible(false);
   if (chatEls.welcome) {
     chatEls.welcome.hidden = false;
     chatEls.welcome.removeAttribute('aria-hidden');
@@ -2170,8 +2170,6 @@ function openChatSection(section) {
   const route = routes[section] || 'chat';
   const target = `/SantitosIA/${route}`;
   if (section === 'chat') {
-    setCompanionVisible(true);
-    updateChatCompanionBackground(currentCompanionExpression || 'reposo');
     if (window.location.pathname.replace(/\/+$/, '') !== '/SantitosIA/chat' || window.location.hash) {
       window.history.pushState({ section }, '', target);
     }
