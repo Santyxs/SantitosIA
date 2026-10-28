@@ -1517,96 +1517,22 @@ body.chat-compact .chat-stage{padding-top:18px}
 /* ========== Avatares gigantes como fondo de cada respuesta ========== */
 .chat-messages{width:min(1080px,100%);gap:28px}
 .chat-message.assistant-message{position:relative;isolation:isolate;min-height:260px;align-items:center;padding:12px 0}
-.chat-message.assistant-message .message-avatar{
-  position:absolute;z-index:-1;left:0;top:50%;transform:translateY(-50%);
-  width:clamp(250px,34vw,440px);height:clamp(250px,34vw,440px);flex:0 0 auto;
-  display:grid;place-items:center;border:0;border-radius:0;overflow:visible;
-  margin:0;background:transparent;box-shadow:none;opacity:.30;pointer-events:none;
-}
-.chat-message.assistant-message .message-avatar img{
-  display:block;width:100%;height:100%;object-fit:contain;object-position:center;
-  border-radius:0;filter:drop-shadow(0 0 28px rgba(105,105,255,.25));
-  -webkit-mask-image:radial-gradient(ellipse at center,#000 38%,rgba(0,0,0,.82) 58%,transparent 78%);
-  mask-image:radial-gradient(ellipse at center,#000 38%,rgba(0,0,0,.82) 58%,transparent 78%);
-}
-.chat-message.assistant-message .message-body{position:relative;z-index:1;margin-left:clamp(125px,19vw,230px);max-width:min(700px,calc(100% - 140px))}
-.chat-message.assistant-message .message-bubble{
-  background:rgba(9,15,34,.34);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
-  border-color:rgba(142,151,225,.14);box-shadow:0 8px 32px rgba(0,0,0,.06)
-}
-.chat-message.user-message .message-bubble{background:rgba(61,74,165,.30);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.chat-message.assistant-message .message-meta{ text-shadow:0 1px 8px rgba(0,0,0,.7) }
-.chat-message.assistant-message.typing-row{min-height:150px}
-.chat-message.assistant-message.typing-row .message-avatar{width:clamp(190px,25vw,300px);height:clamp(190px,25vw,300px);opacity:.23}
-.chat-message.assistant-message.typing-row .message-body{margin-left:clamp(100px,15vw,175px)}
-@media(max-width:640px){
-  .chat-messages{gap:18px}
-  .chat-message.assistant-message{min-height:190px;padding:8px 0}
-  .chat-message.assistant-message .message-avatar{left:-22px;width:230px;height:230px;opacity:.24}
-  .chat-message.assistant-message .message-body{margin-left:66px;max-width:calc(100% - 66px)}
-  .chat-message.assistant-message .message-bubble{padding:12px 13px;background:rgba(8,13,29,.40)}
-  .chat-message.user-message .message-bubble{background:rgba(61,74,165,.34)}
-  .chat-message.assistant-message.typing-row{min-height:130px}
-  .chat-message.assistant-message.typing-row .message-avatar{width:180px;height:180px;left:-16px}
-  .chat-message.assistant-message.typing-row .message-body{margin-left:55px}
-}
-@media(prefers-reduced-motion:reduce){.chat-message.assistant-message .message-avatar img{filter:none}}
 
-
-/* Correccion: avatar de fondo centrado y sin icono duplicado */
-.chat-message.assistant-message{position:relative;isolation:isolate}
-.chat-message.assistant-message .message-avatar{
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:clamp(260px,38vw,470px);
-  height:clamp(260px,38vw,470px);
-  opacity:.25;
-}
-.chat-message.assistant-message .message-body{
-  margin-left:0;
-  max-width:min(700px,100%);
-  width:min(700px,100%);
-}
-.chat-message.assistant-message .message-bubble{
-  background:rgba(9,15,34,.38);
-}
-@media(max-width:640px){
-  .chat-message.assistant-message .message-avatar{
-    left:50%;
-    width:240px;
-    height:240px;
-    opacity:.22;
-  }
-  .chat-message.assistant-message .message-body{
-    margin-left:0;
-    max-width:100%;
-    width:100%;
-  }
-}
-/* Oculta el avatar normal del mensaje: el mismo elemento solo actua como fondo */
-.chat-message.assistant-message .message-avatar{
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  background:transparent!important;
-}
-
-
-
-/* Avatar del compañero: anclado al stage (altura estable), no a la lista de mensajes */
+/* Companion portrait: only when chat section is active */
 .chat-stage{
   --chat-companion-image: none;
-  background-image: var(--chat-companion-image);
+  background-image: none;
   background-repeat: no-repeat;
-  background-position: center 18%;
-  background-size: min(36vw, 400px) auto;
+  background-position: center 48%;
+  background-size: min(34vw, 360px) auto;
   background-attachment: scroll;
+}
+.chat-stage.show-companion{
+  background-image: var(--chat-companion-image);
 }
 .chat-messages{
   background-image: none !important;
   position: relative;
-  isolation: isolate;
   z-index: 1;
 }
 .chat-messages::before{
@@ -1637,9 +1563,9 @@ body.chat-compact .chat-stage{padding-top:18px}
   -webkit-backdrop-filter: blur(2px);
 }
 @media (max-width: 640px){
-  .chat-stage{
-    background-position: center 14%;
-    background-size: min(78vw, 320px) auto;
+  .chat-stage.show-companion{
+    background-position: center 42%;
+    background-size: min(72vw, 300px) auto;
   }
   .chat-message.assistant-message{
     padding: 9px 0 !important;
@@ -1679,7 +1605,9 @@ body.chat-compact .chat-stage{padding-top:18px}
 
 /* Smooth entrance for messages */
 .chat-message {
-  contain: style;
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
   animation: message-in .38s cubic-bezier(.2,.8,.2,1) both;
 }
 @keyframes message-in {
@@ -1710,7 +1638,7 @@ body.chat-compact .chat-stage{padding-top:18px}
   contain:layout style;
 }
 .chat-stage{
-  contain:paint;
+  /* avoid layout containment shifting backgrounds */
 }
 .chat-composer-area{
   contain:layout style;
