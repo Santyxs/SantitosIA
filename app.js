@@ -1028,10 +1028,13 @@ function renderRecentChats() {
   }
   const frag = document.createDocumentFragment();
   for (const session of recent) {
+    const row = document.createElement('div');
+    row.className = 'recent-chat-row' + (session.id === activeChatId ? ' current' : '');
+
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'recent-chat' + (session.id === activeChatId ? ' current' : '');
-    button.title = session.title;
+    button.className = 'recent-chat';
+    button.title = session.title || 'Nueva conversación';
     const title = document.createElement('span');
     title.className = 'recent-chat-title';
     title.textContent = session.title || 'Nueva conversación';
@@ -1041,7 +1044,21 @@ function renderRecentChats() {
     meta.textContent = `${count} mensaje${count === 1 ? '' : 's'} · ${formatChatRelativeDate(session.updatedAt)}`;
     button.append(title, meta);
     button.addEventListener('click', () => { renderConversation(session.id); closeChatSidebar(); });
-    frag.append(button);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'recent-chat-delete';
+    del.setAttribute('aria-label', `Borrar «${session.title || 'conversación'}»`);
+    del.title = 'Borrar';
+    del.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 7h12m-9 0V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    del.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteSession(session.id);
+    });
+
+    row.append(button, del);
+    frag.append(row);
   }
   chatEls.recentList.replaceChildren(frag);
 }
