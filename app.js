@@ -1000,6 +1000,18 @@ async function copyText(text) {
     showChatToast('Texto copiado.');
   } catch (_) { showChatToast('No se ha podido copiar automáticamente.'); }
 }
+function formatChatRelativeDate(ts) {
+  const date = new Date(ts || Date.now());
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startThat = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const dayDiff = Math.round((startToday - startThat) / 86400000);
+  if (dayDiff <= 0) return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  if (dayDiff === 1) return 'Ayer';
+  if (dayDiff < 7) return date.toLocaleDateString('es-ES', { weekday: 'short' });
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
 function renderRecentChats() {
   if (!chatEls.recentList) return;
   const recent = chatSessions.length
@@ -1020,7 +1032,14 @@ function renderRecentChats() {
     button.type = 'button';
     button.className = 'recent-chat' + (session.id === activeChatId ? ' current' : '');
     button.title = session.title;
-    button.textContent = session.title;
+    const title = document.createElement('span');
+    title.className = 'recent-chat-title';
+    title.textContent = session.title || 'Nueva conversación';
+    const meta = document.createElement('span');
+    meta.className = 'recent-chat-meta';
+    const count = Array.isArray(session.messages) ? session.messages.length : 0;
+    meta.textContent = `${count} mensaje${count === 1 ? '' : 's'} · ${formatChatRelativeDate(session.updatedAt)}`;
+    button.append(title, meta);
     button.addEventListener('click', () => { renderConversation(session.id); closeChatSidebar(); });
     frag.append(button);
   }
