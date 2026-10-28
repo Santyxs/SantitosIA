@@ -1615,7 +1615,6 @@ body.chat-compact .chat-stage{padding-top:18px}
   to { opacity: 1; transform: none; }
 }
 
-/* Character selector cards look better with new portraits */
 .companion-character-image {
   overflow: hidden;
   border-radius: 14px;
@@ -1632,13 +1631,10 @@ body.chat-compact .chat-stage{padding-top:18px}
   overflow: hidden;
 }
 
-
-/* Performance: isolate heavy UI regions */
 .chat-sidebar{
   contain:layout style;
 }
 .chat-stage{
-  /* avoid layout containment shifting backgrounds */
 }
 .chat-composer-area{
   contain:layout style;
