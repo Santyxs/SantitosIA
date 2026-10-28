@@ -1210,11 +1210,15 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
   };
 }
 
-async function callStandaloneAI(options) {
+async function callStandaloneAI(options = {}, onToken) {
   if (aiRequestInProgress) throw new Error('Espera a que termine la respuesta actual.');
   aiRequestInProgress = true;
-  try { return await callCompanionAI(options); }
-  finally { aiRequestInProgress = false; }
+  try {
+    // Streaming por defecto; onToken recibe (piece, fullText) si se proporciona
+    return await callCompanionAIStream(options, onToken);
+  } finally {
+    aiRequestInProgress = false;
+  }
 }
 
 async function generateReplyForSession(session, options = {}) {
@@ -1510,11 +1514,24 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     summaryButton.disabled = true; summaryButton.textContent = 'Preparando…';
     try {
       const source = todayEntries.map((entry) => `- ${entry.title}: ${entry.content}`).join('\n');
-      const result = await callStandaloneAI({ mode: 'journal_draft', messages: [{ role: 'user', content: `Prepara un resumen diario fiel y claro a partir de estas entradas. No inventes nada. Devuelve solo el resumen.\n\n${source}` }] });
-      openEditor(); titleInput.value = `Resumen del día · ${new Date().toLocaleDateString('es-ES')}`; categorySelect.value = 'Recuerdos'; contentArea.value = result.reply; visibilitySelect.value = 'private';
+      openEditor();
+      titleInput.value = `Resumen del día · ${new Date().toLocaleDateString('es-ES')}`;
+      categorySelect.value = 'Recuerdos';
+      visibilitySelect.value = 'private';
+      contentArea.value = '';
+      contentArea.classList.add('streaming-input');
+      const result = await callStandaloneAI(
+        { mode: 'journal_draft', messages: [{ role: 'user', content: `Prepara un resumen diario fiel y claro a partir de estas entradas. No inventes nada. Devuelve solo el resumen.\n\n${source}` }] },
+        (_piece, full) => { contentArea.value = full; },
+      );
+      contentArea.value = result.reply;
       showChatToast('Resumen preparado como borrador; revísalo y guárdalo cuando quieras.');
     } catch (error) { showChatToast(error.message || 'No se pudo preparar el resumen.', { important: true }); }
-    finally { summaryButton.disabled = false; summaryButton.textContent = 'Preparar resumen de hoy'; }
+    finally {
+      contentArea.classList.remove('streaming-input');
+      summaryButton.disabled = false;
+      summaryButton.textContent = 'Preparar resumen de hoy';
+    }
   });
 
   exportButton.addEventListener('click', () => {
@@ -1528,11 +1545,22 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     if (!source) { showChatToast('Escribe primero algunas ideas para que la IA las redacte.'); contentArea.focus(); return; }
     if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
     draftButton.disabled = true; draftButton.textContent = 'Redactando…';
+    contentArea.classList.add('streaming-input');
     try {
-      const result = await callStandaloneAI({ mode: 'journal_draft', messages: [{ role: 'user', content: `Convierte estas notas en una entrada de diario natural y fiel. No inventes hechos ni emociones. Conserva la intención y el tono original.\n\n${source}` }] });
-      contentArea.value = result.reply; showChatToast('Borrador preparado. Revísalo antes de guardarlo.');
-    } catch (error) { showChatToast(error.message || 'No se pudo redactar la entrada.', { important: true }); }
-    finally { draftButton.disabled = false; draftButton.textContent = 'Redactar con IA'; }
+      const result = await callStandaloneAI(
+        { mode: 'journal_draft', messages: [{ role: 'user', content: `Convierte estas notas en una entrada de diario natural y fiel. No inventes hechos ni emociones. Conserva la intención y el tono original.\n\n${source}` }] },
+        (_piece, full) => { contentArea.value = full; },
+      );
+      contentArea.value = result.reply;
+      showChatToast('Borrador preparado. Revísalo antes de guardarlo.');
+    } catch (error) {
+      contentArea.value = source;
+      showChatToast(error.message || 'No se pudo redactar la entrada.', { important: true });
+    } finally {
+      contentArea.classList.remove('streaming-input');
+      draftButton.disabled = false;
+      draftButton.textContent = 'Redactar con IA';
+    }
   });
 
   form.addEventListener('submit', async (event) => {
