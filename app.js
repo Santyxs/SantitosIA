@@ -2878,10 +2878,3 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ─── Registro de Service Worker para PWA / Caché offline ───
-if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch((err) => {
-      console.warn('No se pudo registrar ServiceWorker:', err);
-    });
-  });
-}
