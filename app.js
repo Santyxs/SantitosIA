@@ -1384,6 +1384,33 @@ function deleteSession(id) {
 function exportSession(id, format) {
   const session = chatSessions.find((s) => s.id === id);
   if (!session) return;
+  const safeName = `${(session.title || 'chat').replace(/[^\w\-áéíóúñü ]+/gi, '').trim() || 'chat'}`;
+  if (format === 'json') {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      session: {
+        id: session.id,
+        title: session.title || 'Chat',
+        createdAt: session.createdAt || Date.now(),
+        updatedAt: session.updatedAt || Date.now(),
+        messages: (session.messages || []).map((m) => ({
+          id: m.id || makeId(),
+          role: m.role,
+          content: m.content || '',
+          timestamp: m.timestamp || Date.now(),
+        })),
+      },
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safeName}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showChatToast('Chat exportado en JSON.');
+    return;
+  }
   const lines = [];
   if (format === 'md') {
     lines.push(`# ${session.title || 'Chat'}`);
@@ -1406,10 +1433,96 @@ function exportSession(id, format) {
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${(session.title || 'chat').replace(/[^\w\-áéíóúñü ]+/gi, '').trim() || 'chat'}.${format === 'md' ? 'md' : 'txt'}`;
+  a.download = `${safeName}.${format === 'md' ? 'md' : 'txt'}`;
   a.click();
   URL.revokeObjectURL(a.href);
   showChatToast(format === 'md' ? 'Chat exportado en Markdown.' : 'Chat exportado en texto.');
+}
+function parseImportedChat(text, fileName) {
+  const name = String(fileName || '').toLowerCase();
+  if (name.endsWith('.json') || text.trim().startsWith('{')) {
+    const data = JSON.parse(text);
+    const raw = data.session || data;
+    if (!raw || !Array.isArray(raw.messages)) throw new Error('JSON no válido');
+    const messages = raw.messages
+      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof (m.content || '') === 'string')
+      .map((m) => ({
+        id: m.id || makeId(),
+        role: m.role,
+        content: String(m.content || '').slice(0, 85000),
+        timestamp: Number(m.timestamp) || Date.now(),
+      }));
+    return {
+      id: makeId(),
+      title: String(raw.title || fileName.replace(/\.[^.]+$/, '') || 'Chat importado').slice(0, 80),
+      createdAt: Number(raw.createdAt) || Date.now(),
+      updatedAt: Date.now(),
+      messages,
+    };
+  }
+  // Markdown / text: ## Tú / ## SantitosIA or [Tú] lines
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  let title = fileName.replace(/\.[^.]+$/, '') || 'Chat importado';
+  const messages = [];
+  let role = null;
+  let buf = [];
+  const flush = () => {
+    if (!role) return;
+    const content = buf.join('\n').trim();
+    if (content) {
+      messages.push({ id: makeId(), role, content: content.slice(0, 85000), timestamp: Date.now() });
+    }
+    buf = [];
+  };
+  for (const line of lines) {
+    if (line.startsWith('# ') && !line.startsWith('## ')) {
+      title = line.slice(2).trim() || title;
+      continue;
+    }
+    if (/^##\s*(Tú|Tu|User)\s*$/i.test(line) || /^\[(Tú|Tu|User)\]\s*/i.test(line)) {
+      flush();
+      role = 'user';
+      const inline = line.match(/^\[(?:Tú|Tu|User)\]\s*(.*)$/i);
+      buf = inline && inline[1] ? [inline[1]] : [];
+      continue;
+    }
+    if (/^##\s*(SantitosIA|Assistant|Asistente)/i.test(line) || /^\[(SantitosIA|Assistant|Asistente)\]\s*/i.test(line)) {
+      flush();
+      role = 'assistant';
+      const inline = line.match(/^\[(?:SantitosIA|Assistant|Asistente)\]\s*(.*)$/i);
+      buf = inline && inline[1] ? [inline[1]] : [];
+      continue;
+    }
+    if (role) buf.push(line);
+  }
+  flush();
+  if (!messages.length) throw new Error('No se encontraron mensajes en el archivo');
+  return {
+    id: makeId(),
+    title: String(title).slice(0, 80),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages,
+  };
+}
+function importChatFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const session = parseImportedChat(String(reader.result || ''), file.name || 'chat.json');
+      chatSessions.unshift(session);
+      chatSessions = chatSessions.slice(0, 30);
+      saveChatSessions();
+      renderRecentChats();
+      showChatToast(`Importado: «${session.title}» (${session.messages.length} mensajes).`);
+      if (activeChatSection === 'history') showPanel('history');
+    } catch (err) {
+      showChatToast(err && err.message ? err.message : 'No se pudo importar el archivo.', { important: true });
+    }
+  };
+  reader.onerror = () => showChatToast('No se pudo leer el archivo.', { important: true });
+  reader.readAsText(file);
 }
 function collectAllAttachments() {
   const list = [];
@@ -2047,20 +2160,44 @@ function showPanel(section) {
   const heading = document.createElement('h2'); const description = document.createElement('p');
   if (section === 'history') {
     kicker.textContent = 'TUS CONVERSACIONES'; heading.textContent = 'Historial';
-    description.textContent = chatSessions.length ? 'Busca, abre, renombra, exporta o borra tus conversaciones.' : 'Cuando empieces a conversar, tus chats recientes aparecerán aquí.';
+    description.textContent = chatSessions.length
+      ? 'Busca por título o contenido. Exporta, importa o borra conversaciones.'
+      : 'Cuando empieces a conversar, tus chats aparecerán aquí. También puedes importar un JSON o Markdown.';
+    const toolbar = document.createElement('div');
+    toolbar.className = 'panel-history-toolbar';
     const search = document.createElement('input');
     search.type = 'search';
     search.className = 'panel-search';
-    search.placeholder = 'Buscar por título…';
+    search.placeholder = 'Buscar por título o mensaje…';
     search.setAttribute('aria-label', 'Buscar conversaciones');
+    const importBtn = document.createElement('button');
+    importBtn.type = 'button';
+    importBtn.className = 'panel-tool-btn';
+    importBtn.textContent = 'Importar';
+    const importInput = document.createElement('input');
+    importInput.type = 'file';
+    importInput.accept = '.json,.md,.txt,application/json,text/markdown,text/plain';
+    importInput.hidden = true;
+    importBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', () => {
+      const file = importInput.files && importInput.files[0];
+      importInput.value = '';
+      if (file) importChatFromFile(file);
+    });
+    toolbar.append(search, importBtn, importInput);
     const list = document.createElement('div');
     list.className = 'panel-history-list';
+    function sessionMatchesQuery(session, q) {
+      if (!q) return true;
+      if (String(session.title || '').toLowerCase().includes(q)) return true;
+      return (session.messages || []).some((m) => String(m.content || '').toLowerCase().includes(q));
+    }
     function paintHistory(filter) {
       list.replaceChildren();
       const q = (filter || '').trim().toLowerCase();
       const items = [...chatSessions]
-        .sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-        .filter((s) => !q || String(s.title || '').toLowerCase().includes(q));
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .filter((s) => sessionMatchesQuery(s, q));
       if (!items.length) {
         const empty = document.createElement('p');
         empty.className = 'settings-hint';
@@ -2074,7 +2211,8 @@ function showPanel(section) {
         const main = document.createElement('button');
         main.type = 'button';
         main.className = 'panel-history-main';
-        const title = document.createElement('strong'); title.textContent = session.title;
+        const title = document.createElement('strong');
+        title.textContent = session.title;
         const meta = document.createElement('small');
         meta.textContent = `${session.messages.length} mensajes · ${new Date(session.updatedAt || Date.now()).toLocaleDateString('es-ES')}`;
         main.append(title, meta);
@@ -2091,7 +2229,8 @@ function showPanel(section) {
         };
         tools.append(
           mk('Renombrar', () => renameSession(session.id)),
-          mk('Exportar', () => exportSession(session.id, 'md')),
+          mk('JSON', () => exportSession(session.id, 'json')),
+          mk('Markdown', () => exportSession(session.id, 'md')),
           mk('Borrar', () => deleteSession(session.id))
         );
         row.append(main, tools);
@@ -2099,13 +2238,10 @@ function showPanel(section) {
       });
     }
     search.addEventListener('input', () => paintHistory(search.value));
-    if (chatSessions.length) {
-      panel.append(kicker, heading, description, search, list);
-      paintHistory('');
-    } else {
-      panel.append(kicker, heading, description);
-    }
+    panel.append(kicker, heading, description, toolbar, list);
+    paintHistory('');
   } else if (section === 'files') {
+
     kicker.textContent = 'DOCUMENTOS E IMÁGENES'; heading.textContent = 'Tus archivos';
     description.textContent = 'Archivos adjuntados en tus conversaciones de este navegador. Los archivos de texto compatibles y las imágenes pequeñas se procesan al enviarlos en el chat; los ZIP no se extraen automáticamente.';
     const action = document.createElement('button');
