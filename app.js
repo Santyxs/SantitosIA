@@ -1,16 +1,10 @@
-// ─── Config ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
-
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const ARROW = '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
 const ICON_COPY = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const ICON_LISTEN = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.7l3.3 2.5v-9L5.2 6H2.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 const ICON_REGEN = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 0 1 8.2-3.3M12.8 8a4.8 4.8 0 0 1-8.2 3.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.2 2.8v2.6H8.6M4.8 13.2v-2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-// ─── DOM ──────────────────────────────────────────────────
 const els = {
   modal: document.getElementById('authModal'),
   title: document.getElementById('authTitle'),
@@ -41,16 +35,12 @@ const els = {
   accountFeedback: document.getElementById('accountFeedback'),
   logoutBtn: document.getElementById('logoutBtn'),
 };
-
 let mode = 'register';
 let currentAuthUser = null;
-
-// ─── Helpers UI ───────────────────────────────────────────
 function msg(text, error) {
   els.message.textContent = text || '';
   els.message.className = 'form-message' + (error ? ' error' : '');
 }
-
 function loading(on) {
   els.submit.disabled = !!on;
   els.submit.style.opacity = on ? '0.7' : '';
@@ -60,7 +50,6 @@ function loading(on) {
     els.submit.innerHTML = on ? 'Entrando…' : 'Iniciar sesión ' + ARROW;
   }
 }
-
 function errorText(err) {
   const m = ((err && err.message) || String(err || '')).toLowerCase();
   if (m.includes('invalid login') || m.includes('invalid credentials'))
@@ -77,12 +66,9 @@ function errorText(err) {
     return 'No se pudo conectar. Revisa tu conexión.';
   return (err && err.message) || 'Ha ocurrido un error.';
 }
-
-// ─── Modal ────────────────────────────────────────────────
 function openAuth(nextMode) {
   mode = nextMode === 'login' ? 'login' : 'register';
   const reg = mode === 'register';
-
   els.title.textContent = reg ? 'Crea tu cuenta' : 'Qué alegría verte';
   els.subtitle.textContent = reg
     ? 'Empieza gratis con Santitos Jr.'
@@ -99,7 +85,6 @@ function openAuth(nextMode) {
       ? 'Registro con correo y contraseña. Plan inicial: gratis.'
       : 'Usa el correo con el que te registraste.';
   }
-
   msg('');
   loading(false);
   closeMenu();
@@ -108,7 +93,6 @@ function openAuth(nextMode) {
   document.body.style.overflow = 'hidden';
   setTimeout(() => els.email.focus(), 60);
 }
-
 function closeAuth() {
   els.modal.classList.remove('open');
   els.modal.setAttribute('aria-hidden', 'true');
@@ -117,8 +101,6 @@ function closeAuth() {
   msg('');
   loading(false);
 }
-
-// ─── Menú móvil ───────────────────────────────────────────
 function openMenu() {
   els.navLinks.classList.add('mobile-open');
   els.topbar.classList.add('menu-open');
@@ -126,7 +108,6 @@ function openMenu() {
   els.menuBtn.setAttribute('aria-label', 'Cerrar menú');
   document.body.style.overflow = 'hidden';
 }
-
 function closeMenu() {
   els.navLinks.classList.remove('mobile-open');
   els.topbar.classList.remove('menu-open');
@@ -136,25 +117,20 @@ function closeMenu() {
     document.body.style.overflow = '';
   }
 }
-
-// ─── Sesión en la UI ──────────────────────────────────────
 function displayNameFromEmail(email) {
   const localPart = String(email || '').split('@')[0].trim();
   if (!localPart) return 'Mi cuenta';
   const words = localPart.replace(/[._+-]+/g, ' ').replace(/\s+/g, ' ').trim();
   return words ? words.replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase('es')) : 'Mi cuenta';
 }
-
 function closeAccountMenu() {
   if (els.accountMenu) els.accountMenu.hidden = true;
   if (els.userChip) els.userChip.setAttribute('aria-expanded', 'false');
 }
-
 function setUser(user) {
   currentAuthUser = user && user.email ? user : null;
   const email = user && user.email ? String(user.email).trim() : '';
   const loggedIn = !!email;
-
   if (loggedIn) {
     const displayName = displayNameFromEmail(email);
     if (els.guestNav) els.guestNav.hidden = true;
@@ -194,7 +170,6 @@ function setUser(user) {
     }
   } else showLandingView();
 }
-
 function accountAction(action) {
   closeAccountMenu();
   if (els.accountFeedback) {
@@ -213,8 +188,6 @@ function accountAction(action) {
     }
   }
 }
-
-// ─── Auth ─────────────────────────────────────────────────
 async function register(email, password) {
   const { data, error } = await sb.auth.signUp({
     email,
@@ -222,14 +195,12 @@ async function register(email, password) {
     options: { emailRedirectTo: new URL('./', window.location.href).href }
   });
   if (error) throw error;
-
   if (data.user) {
     await sb.from('profiles').upsert(
       { id: data.user.id, email: data.user.email, plan: 'free' },
       { onConflict: 'id' }
     );
   }
-
   if (data.session) {
     setUser(data.user);
     msg('Cuenta creada! Ya has iniciado sesión.');
@@ -238,7 +209,6 @@ async function register(email, password) {
     msg('Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.');
   }
 }
-
 async function login(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -246,14 +216,11 @@ async function login(email, password) {
   msg('Bienvenido de nuevo!');
   setTimeout(closeAuth, 900);
 }
-
 async function logout() {
   await sb.auth.signOut();
   setUser(null);
   closeMenu();
 }
-
-// ─── Eventos ──────────────────────────────────────────────
 document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-open-auth]');
   if (t) {
@@ -266,27 +233,22 @@ document.addEventListener('click', (e) => {
     openAuth(t.dataset.openAuth);
   }
 });
-
 els.closeBtn.addEventListener('click', closeAuth);
 els.modal.addEventListener('click', (e) => {
   if (e.target === els.modal) closeAuth();
 });
-
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (els.modal.classList.contains('open')) closeAuth();
   else if (els.navLinks.classList.contains('mobile-open')) closeMenu();
 });
-
 els.menuBtn.addEventListener('click', () => {
   if (els.navLinks.classList.contains('mobile-open')) closeMenu();
   else openMenu();
 });
-
 els.navLinks.querySelectorAll('a').forEach((a) => {
   a.addEventListener('click', closeMenu);
 });
-
 if (els.logoutBtn) {
   els.logoutBtn.addEventListener('click', () => {
     logout().catch((err) => console.error(err));
@@ -311,14 +273,11 @@ document.addEventListener('click', (event) => {
   }
   if (!event.target.closest('#accountDropdown')) closeAccountMenu();
 });
-
 els.form.addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const email = els.email.value.trim();
   const password = els.password.value;
   const confirm = els.confirmPassword.value;
-
   if (!email || !password) {
     msg('Completa todos los campos.', true);
     return;
@@ -331,7 +290,6 @@ els.form.addEventListener('submit', async (e) => {
     msg('Las contraseñas no coinciden.', true);
     return;
   }
-
   loading(true);
   msg('');
   try {
@@ -343,14 +301,11 @@ els.form.addEventListener('submit', async (e) => {
     loading(false);
   }
 });
-
 window.addEventListener('resize', () => {
   if (window.innerWidth > 850 && els.navLinks.classList.contains('mobile-open')) {
     closeMenu();
   }
 });
-
-// ─── SantitosIA workspace ─────────────────────────────────
 const chatEls = {
   app: document.getElementById('chatApp'),
   sidebar: document.getElementById('chatSidebar'),
@@ -376,7 +331,6 @@ const chatEls = {
   modelBadgeLabel: document.getElementById('modelBadgeLabel'),
   modelPickerMark: document.getElementById('modelPickerMark'),
 };
-
 let chatUserId = null;
 let chatStorageKey = null;
 let chatSessions = [];
@@ -421,17 +375,14 @@ const CHARACTER_INFO = {
     requiresPremium: false,
   },
 };
-
 function canUseCharacter(characterId) {
   const info = CHARACTER_INFO[characterId];
   if (!info) return false;
   if (!info.requiresPremium) return true;
   return !!(PREMIUM_PLAN_ENABLED && hasPremiumPlan());
 }
-
 function resolveCompanionCharacter(characterId) {
   if (canUseCharacter(characterId)) return characterId;
-  // Fallback gratuito si el avatar Premium no está disponible
   return 'jr';
 }
 const CHARACTER_EXPRESSIONS = ['reposo', 'pensando', 'hablando', 'sonrisa'];
@@ -459,7 +410,7 @@ function saveCompanionPrefs(next) {
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.webp';
-  const CACHE = 'v7';
+  const CACHE = 'v8';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
   const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
@@ -471,7 +422,6 @@ function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
 }
 let companionExpressionTimer = null;
 let currentCompanionExpression = 'reposo';
-
 function preloadCharacterExpressions(characterId) {
   CHARACTER_EXPRESSIONS.forEach((expr) => {
     const img = new Image();
@@ -480,12 +430,10 @@ function preloadCharacterExpressions(characterId) {
   const logo = new Image();
   logo.src = 'assets/logo.webp';
 }
-
 function setCompanionVisible(visible) {
   if (!chatEls.stage) return;
   chatEls.stage.classList.toggle('hide-companion', !visible);
 }
-
 function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) {
   const prefs = getCompanionPrefs();
   const validExpr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
@@ -494,7 +442,6 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   if (chatEls.stage) {
     chatEls.stage.style.setProperty('--chat-companion-image', `url("${bgUrl}")`);
     chatEls.stage.dataset.companionExpression = validExpr;
-    // Visible solo en la sección de chat
     setCompanionVisible(activeChatSection === 'chat' && !!activeChatId);
   }
   if (chatEls.messages) chatEls.messages.style.removeProperty('--chat-companion-image');
@@ -536,7 +483,6 @@ function speakText(text) {
   window.speechSynthesis.speak(utterance);
   return true;
 }
-
 async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -570,7 +516,6 @@ async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8)
     reader.readAsDataURL(file);
   });
 }
-
 async function readAttachmentData(files) {
   const result = { text: '', images: [] };
   for (const file of (files || []).slice(0, 8)) {
@@ -590,25 +535,20 @@ async function readAttachmentData(files) {
     const appearsText = textExtensions.includes(extension) || /^text\//i.test(file.type || '') || /json|javascript|xml|yaml/i.test(file.type || '');
     if (appearsText) {
       if (file.size > 700000) { result.text += `
-
 [${name}: archivo demasiado grande para procesarlo en una petición; límite 700 KB.]`; continue; }
       try {
         const content = await file.text();
         const clipped = content.slice(0, 80000);
         result.text += `
-
 [Contenido de ${name}${content.length > clipped.length ? ' (contenido recortado a 80 000 caracteres)' : ''}]
 ${clipped}`;
       } catch (_) { result.text += `
-
 [No se pudo leer ${name}.]`; }
     } else if (extension === 'zip') {
       result.text += `
-
 [Se adjuntó ${name}, un ZIP. La lectura automática de archivos comprimidos todavía no está disponible; extrae y adjunta los archivos de texto que quieras analizar.]`;
     } else if (!isImage) {
       result.text += `
-
 [Se adjuntó ${name}; este tipo de archivo no se ha podido leer como texto.]`;
     }
   }
@@ -629,7 +569,6 @@ async function functionErrorMessage(error) {
   if (status === 429) return 'Has alcanzado el límite de uso. Prueba más tarde o mañana.';
   return 'No se ha podido contactar con la IA. Comprueba la configuración de Supabase y vuelve a intentarlo.';
 }
-
 function showChatView() {
   if (!chatEls.app) return;
   chatEls.app.hidden = false;
@@ -638,7 +577,6 @@ function showChatView() {
   updateChatCompanionBackground('reposo');
   renderRecentChats();
 }
-
 function showLandingView() {
   if (!chatEls.app) return;
   chatEls.app.hidden = true;
@@ -646,7 +584,6 @@ function showLandingView() {
   if (chatEls.app) chatEls.app.classList.remove('sidebar-open');
   if (chatEls.userMenu) chatEls.userMenu.hidden = true;
 }
-
 function updateChatUser(user) {
   chatUserId = user && user.id ? user.id : null;
   chatStorageKey = chatUserId ? `santitosia:chat-history:${chatUserId}` : null;
@@ -671,8 +608,6 @@ function updateChatUser(user) {
   preloadCharacterExpressions(getCompanionPrefs().character);
   updateChatCompanionBackground('reposo');
 }
-
-
 function debounce(fn, wait = 100) {
   let t = null;
   return function debounced(...args) {
@@ -683,7 +618,6 @@ function debounce(fn, wait = 100) {
 function safeRead(key) {
   try { return window.localStorage.getItem(key); } catch (_) { return null; }
 }
-
 const DEFAULT_USER_AVATAR = null;
 function userAvatarStorageKey() {
   return `santitosia:user-avatar:${chatUserId || 'guest'}`;
@@ -734,7 +668,6 @@ function applyUserAvatarEverywhere() {
       el.textContent = (name || 'S').charAt(0).toLocaleUpperCase('es');
     }
   });
-
   document.querySelectorAll('.settings-user-avatar-preview, .settings-logo-preview').forEach((box) => {
     if (src) {
       box.classList.add('has-photo');
@@ -789,7 +722,6 @@ function applyUiPreferences() {
   document.body.classList.toggle('hide-shortcut-hints', !hints);
   applyUserAvatarEverywhere();
 }
-
 function loadChatSessions() {
   if (!chatStorageKey) return [];
   try {
@@ -838,15 +770,12 @@ function updatePlanCard() {
     });
   }
 }
-
 function closeModelMenu() {
   if (!chatEls.modelMenu || !chatEls.modelPickerBtn) return;
   chatEls.modelMenu.hidden = true;
   chatEls.modelPickerBtn.setAttribute('aria-expanded', 'false');
   if (chatEls.modelPicker) chatEls.modelPicker.classList.remove('open');
 }
-
-
 function planStorageKey() {
   return `santitosia:plan:${chatUserId || 'guest'}`;
 }
@@ -860,7 +789,6 @@ function requirePremiumOrCheckout() {
   if (PREMIUM_PLAN_ENABLED && typeof openCheckout === 'function') window.setTimeout(() => openCheckout('pro'), 180);
   return false;
 }
-
 function setModelValue(value, options = {}) {
   if (!chatEls.model) return;
   const next = value === 'pro' ? 'pro' : 'jr';
@@ -1066,7 +994,6 @@ function createMessageNode(item, addActions) {
   return row;
 }
 function addMessageToDOM(item, scroll = true) {
-  // Al añadir un mensaje de usuario, quitar el botón "Editar" del mensaje anterior
   if (item && item.role === 'user' && chatEls.messages) {
     const prevUsers = chatEls.messages.querySelectorAll('.user-message .message-actions');
     prevUsers.forEach((el) => el.remove());
@@ -1095,7 +1022,6 @@ function formatChatRelativeDate(ts) {
   if (dayDiff < 7) return date.toLocaleDateString('es-ES', { weekday: 'short' });
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
-
 function renderRecentChats() {
   if (!chatEls.recentList) return;
   const recent = chatSessions.length
@@ -1114,7 +1040,6 @@ function renderRecentChats() {
   for (const session of recent) {
     const row = document.createElement('div');
     row.className = 'recent-chat-row' + (session.id === activeChatId ? ' current' : '');
-
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'recent-chat';
@@ -1128,7 +1053,6 @@ function renderRecentChats() {
     meta.textContent = `${count} mensaje${count === 1 ? '' : 's'} · ${formatChatRelativeDate(session.updatedAt)}`;
     button.append(title, meta);
     button.addEventListener('click', () => { renderConversation(session.id); closeChatSidebar(); });
-
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'recent-chat-delete';
@@ -1140,7 +1064,6 @@ function renderRecentChats() {
       event.stopPropagation();
       deleteSession(session.id);
     });
-
     row.append(button, del);
     frag.append(row);
   }
@@ -1159,8 +1082,6 @@ function renderAttachmentPreview() {
     pill.append(icon, name, remove); chatEls.attachmentPreview.append(pill);
   });
 }
-
-// ─── Formateador Markdown y Bloques de Código ──────────────
 function escapeHtmlEntities(str) {
   return String(str || '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;',
@@ -1170,24 +1091,19 @@ function escapeHtmlEntities(str) {
     "'": '&#39;'
   }[c]));
 }
-
 function formatChatMarkdown(rawText) {
   if (!rawText) return '';
   const text = String(rawText);
   const codeBlocks = [];
-
-  // Extraer bloques de código con triple backtick
   const placeholderText = text.replace(/\x60{3}([a-zA-Z0-9_-]*)[\r\n]*([\s\S]*?)\x60{3}/g, (_match, lang, code) => {
     const id = codeBlocks.length;
     codeBlocks.push({ lang: lang ? lang.trim() : 'código', code: code.replace(/\r?\n$/, '') });
     return '\n%%CODEBLOCK_' + id + '%%\n';
   });
-
   const lines = placeholderText.split(/\r?\n/);
   const htmlParts = [];
   let inList = false;
   let listType = null; // 'ul' | 'ol'
-
   function closeList() {
     if (inList) {
       htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
@@ -1195,38 +1111,22 @@ function formatChatMarkdown(rawText) {
       listType = null;
     }
   }
-
   function inlineFormat(lineStr) {
     let out = escapeHtmlEntities(lineStr);
-
-    // Código en línea: `código`
     out = out.replace(/\x60([^\x60]+)\x60/g, '<code class="inline-code">$1</code>');
-
-    // Negrita: **texto**
     out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Enlaces markdown: [texto](url)
     out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" class="chat-link" target="_blank" rel="noopener noreferrer">$1</a>');
-
-    // Cursiva: *texto* o _texto_ (evitando tags HTML ya creados)
     out = out.replace(/(^|[\s.,;:!?])\*([^\*\n]+)\*([\s.,;:!?]|$)/g, '$1<em>$2</em>$3');
     out = out.replace(/(^|[\s.,;:!?])_([^_\n]+)_([\s.,;:!?]|$)/g, '$1<em>$2</em>$3');
-
-    // Tachado: ~~texto~~
     out = out.replace(/~~(.+?)~~/g, '<s>$1</s>');
-
     return out;
   }
-
   for (let line of lines) {
     const trimmed = line.trim();
-
     if (!trimmed) {
       closeList();
       continue;
     }
-
-    // Placeholder de bloque de código
     const blockMatch = trimmed.match(/^%%CODEBLOCK_(\d+)%%$/);
     if (blockMatch) {
       closeList();
@@ -1246,8 +1146,6 @@ function formatChatMarkdown(rawText) {
       }
       continue;
     }
-
-    // Listas no ordenadas: - o *
     const bulletMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
     if (bulletMatch) {
       if (!inList || listType !== 'ul') {
@@ -1259,8 +1157,6 @@ function formatChatMarkdown(rawText) {
       htmlParts.push('<li class="chat-list-item">' + inlineFormat(bulletMatch[2]) + '</li>');
       continue;
     }
-
-    // Listas ordenadas: 1. 2. etc.
     const numMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
     if (numMatch) {
       if (!inList || listType !== 'ol') {
@@ -1272,24 +1168,18 @@ function formatChatMarkdown(rawText) {
       htmlParts.push('<li class="chat-list-item">' + inlineFormat(numMatch[2]) + '</li>');
       continue;
     }
-
-    // Cita: >
     const quoteMatch = line.match(/^>\s*(.+)$/);
     if (quoteMatch) {
       closeList();
       htmlParts.push('<blockquote class="chat-quote">' + inlineFormat(quoteMatch[1]) + '</blockquote>');
       continue;
     }
-
-    // Párrafo normal
     closeList();
     htmlParts.push('<p>' + inlineFormat(line) + '</p>');
   }
-
   closeList();
   return htmlParts.join('');
 }
-
 function copyCodeBlock(button) {
   const codeBlock = button.closest('.chat-code-block');
   const codeEl = codeBlock ? codeBlock.querySelector('code') : null;
@@ -1301,11 +1191,9 @@ function copyCodeBlock(button) {
   });
 }
 window.copyCodeBlock = copyCodeBlock;
-
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 }
-
 function renameSession(id) {
   const session = chatSessions.find((s) => s.id === id);
   if (!session) return;
@@ -1404,15 +1292,12 @@ async function callCompanionAI({ messages, mode: requestMode = 'chat', images = 
   }
   return data;
 }
-
-/** Streaming SSE desde la edge function (formato OpenAI / OpenRouter). */
 async function callCompanionAIStream({ messages, mode: requestMode = 'chat', images = [] }, onToken, signal) {
   const prefs = getCompanionPrefs();
   const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
   const { data: sessionData } = await sb.auth.getSession();
   const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
   if (!accessToken) throw new Error('Inicia sesión para utilizar la IA.');
-
   const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
     method: 'POST',
     headers: {
@@ -1430,7 +1315,6 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
       stream: true,
     }),
   });
-
   if (!response.ok) {
     let message = 'No se ha podido contactar con la IA.';
     try {
@@ -1439,9 +1323,7 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
     } catch (_) {}
     throw new Error(message);
   }
-
   if (!response.body) throw new Error('El navegador no pudo leer la respuesta en streaming.');
-
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -1449,7 +1331,6 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
   let model = response.headers.get('X-Model') || null;
   const usedHeader = response.headers.get('X-Daily-Used');
   const limitHeader = response.headers.get('X-Daily-Limit');
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -1473,7 +1354,6 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
       }
     }
   }
-
   const reply = fullText.trim();
   if (!reply) throw new Error('La IA devolvió una respuesta vacía. Inténtalo de nuevo.');
   return {
@@ -1485,18 +1365,15 @@ async function callCompanionAIStream({ messages, mode: requestMode = 'chat', ima
     },
   };
 }
-
 async function callStandaloneAI(options = {}, onToken) {
   if (aiRequestInProgress) throw new Error('Espera a que termine la respuesta actual.');
   aiRequestInProgress = true;
   try {
-    // Streaming por defecto; onToken recibe (piece, fullText) si se proporciona
     return await callCompanionAIStream(options, onToken);
   } finally {
     aiRequestInProgress = false;
   }
 }
-
 async function generateReplyForSession(session, options = {}) {
   if (!session || aiRequestInProgress) return;
   aiRequestInProgress = true;
@@ -1523,8 +1400,6 @@ async function generateReplyForSession(session, options = {}) {
         role: message.role,
         content: `${String(message.content || '')}${message.role === 'user' && message.aiContextText ? `\n\n${message.aiContextText}` : ''}`.slice(0, 85000),
       }));
-
-    // Burbuja provisional para ir mostrando el texto mientras llega
     removeTypingIndicator();
     updateChatCompanionBackground('hablando');
     const draftMessage = {
@@ -1536,7 +1411,6 @@ async function generateReplyForSession(session, options = {}) {
       streamBubble = chatEls.messages.querySelector('.chat-message.assistant-message:last-child .message-bubble');
       if (streamBubble) streamBubble.classList.add('streaming-bubble');
     }
-
     const result = await callCompanionAIStream(
       { messages: contextMessages, images: attachments.images, mode: options.mode || 'chat' },
       (_piece, full) => {
@@ -1546,7 +1420,6 @@ async function generateReplyForSession(session, options = {}) {
         }
       },
     );
-
     assistantMessage = {
       role: 'assistant', timestamp: Date.now(), content: result.reply,
       character: prefs.character, appearance: prefs.appearance, plan,
@@ -1579,13 +1452,11 @@ async function generateReplyForSession(session, options = {}) {
   saveChatSessions();
   renderRecentChats();
   if (activeChatId === session.id && activeChatSection === 'chat') {
-    // Si no hubo burbuja de stream (p. ej. cambió de sección), añadir el mensaje completo
     if (!streamBubble || !streamBubble.isConnected) {
       addMessageToDOM(assistantMessage, true);
     } else if (assistantMessage.failed) {
       addMessageToDOM(assistantMessage, true);
     } else {
-      // Sustituir el nodo provisional por uno definitivo con acciones (copiar, escuchar…)
       const provisional = streamBubble.closest('.chat-message');
       if (provisional) provisional.remove();
       addMessageToDOM(assistantMessage, true);
@@ -1600,7 +1471,6 @@ async function generateReplyForSession(session, options = {}) {
   updateChatCompanionBackground(expression, lockTime);
   if (!assistantMessage.failed && prefs.autoVoice) speakText(assistantMessage.content);
 }
-
 function regenerateLastAssistant() {
   const session = activeSession();
   if (!session || aiRequestInProgress) return;
@@ -1615,7 +1485,6 @@ function regenerateLastAssistant() {
   renderConversation(session.id);
   generateReplyForSession(session);
 }
-
 function editLastUserMessage() {
   const session = activeSession();
   if (!session || !session.messages.length || aiRequestInProgress) return;
@@ -1636,14 +1505,12 @@ function editLastUserMessage() {
   renderConversation(session.id);
   generateReplyForSession(session);
 }
-
 function makeFieldLabel(text, control) {
   const label = document.createElement('label');
   label.className = 'journal-field-label';
   label.append(document.createTextNode(text), control);
   return label;
 }
-
 function downloadTextFile(filename, text, mime = 'text/markdown;charset=utf-8') {
   const blob = new Blob([text], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -1651,7 +1518,6 @@ function downloadTextFile(filename, text, mime = 'text/markdown;charset=utf-8') 
   anchor.href = url; anchor.download = filename; anchor.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-
 function renderDiaryPanel(panel, kicker, heading, description) {
   kicker.textContent = 'TU ESPACIO PERSONAL';
   heading.textContent = 'Mi diario';
@@ -1661,7 +1527,6 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   const summaryButton = document.createElement('button'); summaryButton.type = 'button'; summaryButton.className = 'panel-tool-btn'; summaryButton.textContent = 'Preparar resumen de hoy';
   const exportButton = document.createElement('button'); exportButton.type = 'button'; exportButton.className = 'panel-tool-btn'; exportButton.textContent = 'Exportar diario';
   tools.append(newButton, summaryButton, exportButton);
-
   const form = document.createElement('form'); form.className = 'journal-editor'; form.hidden = true;
   const formTitle = document.createElement('h3'); formTitle.textContent = 'Nueva entrada';
   const titleInput = document.createElement('input'); titleInput.className = 'journal-input'; titleInput.placeholder = 'Título de la entrada'; titleInput.maxLength = 160; titleInput.required = true;
@@ -1681,14 +1546,12 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   const cancelButton = document.createElement('button'); cancelButton.type = 'button'; cancelButton.className = 'panel-tool-btn'; cancelButton.textContent = 'Cancelar';
   actions.append(saveButton, draftButton, cancelButton);
   form.append(formTitle, makeFieldLabel('Título', titleInput), makeFieldLabel('Categoría', categorySelect), makeFieldLabel('Contenido', contentArea), makeFieldLabel('Privacidad', visibilitySelect), privacyHelp, actions);
-
   const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.className = 'journal-search'; searchInput.placeholder = 'Buscar en tus entradas…'; searchInput.setAttribute('aria-label', 'Buscar en el diario por título, contenido o categoría');
   const listHeading = document.createElement('h3'); listHeading.className = 'journal-list-heading'; listHeading.textContent = 'Tus entradas';
   const list = document.createElement('div'); list.className = 'journal-list';
   const status = document.createElement('p'); status.className = 'settings-hint'; status.textContent = 'Cargando las entradas de tu diario…';
   list.append(status);
   panel.append(kicker, heading, description, tools, searchInput, form, listHeading, list);
-
   let entries = [];
   let editingId = null;
   const setStatus = (message, error = false) => {
@@ -1706,7 +1569,6 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   };
   newButton.addEventListener('click', () => openEditor());
   cancelButton.addEventListener('click', () => { form.hidden = true; editingId = null; });
-
   async function loadEntries() {
     if (!chatUserId) { list.replaceChildren(status); setStatus('Inicia sesión para utilizar tu diario.', true); return; }
     const { data, error } = await sb.from('journal_entries').select('id,title,content,category,visibility,created_at,updated_at').eq('user_id', chatUserId).order('updated_at', { ascending: false }).limit(100);
@@ -1719,7 +1581,6 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     entries = data || [];
     renderEntries();
   }
-
   function renderEntries() {
     const query = searchInput.value.trim().toLocaleLowerCase('es');
     const visibleEntries = entries.filter((entry) => !query || [entry.title, entry.content, entry.category].some((value) => String(value || '').toLocaleLowerCase('es').includes(query)));
@@ -1758,9 +1619,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
       card.append(head, body, row); list.append(card);
     });
   }
-
   searchInput.addEventListener('input', renderEntries);
-
   async function shareEntryWithChat(entry, changeVisibility) {
     if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
     if (changeVisibility) {
@@ -1780,7 +1639,6 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     chatEls.input.value = ''; resizeChatInput();
     await sendPromise;
   }
-
   summaryButton.addEventListener('click', async () => {
     if (aiRequestInProgress) { showChatToast('Espera a que termine la respuesta actual.'); return; }
     const today = new Date(); today.setHours(0,0,0,0);
@@ -1809,13 +1667,11 @@ function renderDiaryPanel(panel, kicker, heading, description) {
       summaryButton.textContent = 'Preparar resumen de hoy';
     }
   });
-
   exportButton.addEventListener('click', () => {
     if (!entries.length) { showChatToast('Tu diario todavía está vacío.'); return; }
     const text = entries.map((entry) => `# ${entry.title}\nFecha: ${new Date(entry.created_at).toLocaleDateString('es-ES')}\nCategoría: ${entry.category}\nPrivacidad: ${entry.visibility === 'companion' ? 'Compartida' : 'Privada'}\n\n${entry.content}\n\n---\n`).join('\n');
     downloadTextFile('mi-diario-santitosia.md', text);
   });
-
   draftButton.addEventListener('click', async () => {
     const source = contentArea.value.trim();
     if (!source) { showChatToast('Escribe primero algunas ideas para que la IA las redacte.'); contentArea.focus(); return; }
@@ -1838,7 +1694,6 @@ function renderDiaryPanel(panel, kicker, heading, description) {
       draftButton.textContent = 'Redactar con IA';
     }
   });
-
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const title = titleInput.value.trim(); const content = contentArea.value.trim();
@@ -1855,16 +1710,13 @@ function renderDiaryPanel(panel, kicker, heading, description) {
   });
   loadEntries();
 }
-
 function renderCompanionPanel(panel, kicker, heading, description) {
   kicker.textContent = 'PERSONALIZA TU COMPAÑERO';
   heading.textContent = 'Elige tu avatar';
   description.textContent = 'Elige cómo se presenta tu asistente. Syntia y Santitos Jr. son gratis; Santitos requiere Premium.';
-
   const prefs = getCompanionPrefs();
   const card = document.createElement('div');
   card.className = 'settings-card companion-settings-card';
-
   const preview = document.createElement('div');
   preview.className = 'companion-preview';
   const avatar = document.createElement('div');
@@ -1880,7 +1732,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   status.textContent = 'AVATAR SELECCIONADO';
   previewCopy.append(name, detail, status);
   preview.append(avatar, previewCopy);
-
   const selectorHeading = document.createElement('div');
   selectorHeading.className = 'companion-selector-heading';
   const selectorTitle = document.createElement('strong');
@@ -1890,7 +1741,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     ? '3 avatares disponibles'
     : '2 avatares gratis · 1 Premium';
   selectorHeading.append(selectorTitle, selectorHelp);
-
   const characterGrid = document.createElement('div');
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
@@ -1899,7 +1749,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
     { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
   ];
-
   const appearanceSelect = document.createElement('select');
   appearanceSelect.className = 'settings-model-select';
   appearanceSelect.setAttribute('aria-label', 'Apariencia del avatar');
@@ -1907,7 +1756,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     const option = document.createElement('option'); option.value = value; option.textContent = label; appearanceSelect.append(option);
   });
   appearanceSelect.value = prefs.appearance;
-
   const voiceSelect = document.createElement('select');
   voiceSelect.className = 'settings-model-select';
   voiceSelect.setAttribute('aria-label', 'Voz del asistente');
@@ -1924,14 +1772,12 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   };
   updateVoiceList();
   if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = updateVoiceList;
-
   const autoRow = document.createElement('label'); autoRow.className = 'companion-voice-toggle';
   const autoCheckbox = document.createElement('input'); autoCheckbox.type = 'checkbox'; autoCheckbox.checked = prefs.autoVoice;
   const autoText = document.createElement('span'); autoText.textContent = 'Reproducir automáticamente las respuestas';
   autoRow.append(autoCheckbox, autoText);
   const voiceHelp = document.createElement('p'); voiceHelp.className = 'settings-hint';
   voiceHelp.textContent = 'La voz depende del sintetizador disponible en tu navegador o dispositivo.';
-
   const refreshPreview = () => {
     const current = getCompanionPrefs();
     const info = getCharacterInfo(current.character);
@@ -1962,7 +1808,6 @@ function renderCompanionPanel(panel, kicker, heading, description) {
       }
     });
   };
-
   characterChoices.forEach((choice) => {
     const info = getCharacterInfo(choice.id);
     const locked = !!(choice.premium || info.requiresPremium) && !canUseCharacter(choice.id);
@@ -2013,11 +1858,9 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     characterButtons.set(choice.id, button);
     characterGrid.append(button);
   });
-
   appearanceSelect.addEventListener('change', () => { saveCompanionPrefs({ appearance: appearanceSelect.value }); refreshPreview(); });
   autoCheckbox.addEventListener('change', () => saveCompanionPrefs({ autoVoice: autoCheckbox.checked }));
   voiceSelect.addEventListener('change', () => saveCompanionPrefs({ voiceURI: voiceSelect.value }));
-
   const settingsDivider = document.createElement('div'); settingsDivider.className = 'companion-settings-divider';
   const appearanceLabel = makeFieldLabel('Apariencia', appearanceSelect);
   const voiceLabel = makeFieldLabel('Voz', voiceSelect);
@@ -2141,11 +1984,8 @@ function showPanel(section) {
     kicker.textContent = 'PERSONALIZA TU EXPERIENCIA';
     heading.textContent = 'Configuración';
     description.textContent = 'Ajusta tu cuenta, tu avatar y las preferencias guardadas en este navegador.';
-
     const settingsBody = document.createElement('div');
     settingsBody.className = 'settings-body';
-
-    // Account card
     const accountCard = document.createElement('div');
     accountCard.className = 'settings-card';
     const accountTitle = document.createElement('div');
@@ -2179,7 +2019,6 @@ function showPanel(section) {
     planPill.textContent = (chatEls.model && chatEls.model.value === 'pro') ? 'Premium' : 'Gratis';
     accountRow.append(accountAvatar, accountMeta, planPill);
     accountCard.append(accountTitle, accountRow);
-
     if (currentAuthUser && currentAuthUser.email) {
       const emailBlock = document.createElement('div');
       emailBlock.className = 'settings-email-block';
@@ -2223,8 +2062,6 @@ function showPanel(section) {
       emailBlock.append(emailLabel, emailInput, emailBtn);
       accountCard.append(emailBlock);
     }
-
-    // Avatar del usuario
     const logoCard = document.createElement('div');
     logoCard.className = 'settings-card';
     const logoTitle = document.createElement('div');
@@ -2298,14 +2135,11 @@ function showPanel(section) {
     logoActions.append(uploadBtn, resetBtn, logoFile);
     logoRow.append(logoPreview, logoActions);
     logoCard.append(logoTitle, logoHint, logoRow);
-
-    // Preferences
     const prefsCard = document.createElement('div');
     prefsCard.className = 'settings-card';
     const prefsTitle = document.createElement('div');
     prefsTitle.className = 'settings-card-title';
     prefsTitle.innerHTML = '<span class="settings-card-icon">⚙</span><span>Preferencias</span>';
-
     function makeToggle(key, title, subtitle, initial, onChange) {
       const row = document.createElement('div');
       row.className = 'settings-toggle-row';
@@ -2327,7 +2161,6 @@ function showPanel(section) {
       row.append(copy, toggle);
       return row;
     }
-
     const webRow = makeToggle(
       'web',
       'Búsqueda web',
@@ -2340,7 +2173,6 @@ function showPanel(section) {
         showChatToast(next ? 'Búsqueda web activada (vista previa).' : 'Búsqueda web desactivada.');
       }
     );
-
     const compactInitial = safeRead(`santitosia:compact:${chatUserId || 'guest'}`) === '1';
     const compactRow = makeToggle(
       'compact',
@@ -2353,7 +2185,6 @@ function showPanel(section) {
         showChatToast(next ? 'Modo compacto activado.' : 'Modo compacto desactivado.');
       }
     );
-
     const hintsInitial = safeRead(`santitosia:hints:${chatUserId || 'guest'}`) !== '0';
     const hintsRow = makeToggle(
       'hints',
@@ -2366,10 +2197,7 @@ function showPanel(section) {
         showChatToast(next ? 'Atajos visibles.' : 'Atajos ocultos.');
       }
     );
-
     prefsCard.append(prefsTitle, webRow, compactRow, hintsRow);
-
-    // Data / storage
     const dataCard = document.createElement('div');
     dataCard.className = 'settings-card';
     const dataTitle = document.createElement('div');
@@ -2403,7 +2231,6 @@ function showPanel(section) {
     });
     dataActions.append(clearBtn);
     dataCard.append(dataTitle, dataHint, dataActions);
-
     settingsBody.append(accountCard, logoCard, prefsCard, dataCard);
     panel.append(kicker, heading, description, settingsBody);
     applyUserAvatarEverywhere();
@@ -2479,13 +2306,10 @@ async function sendChatMessage(text) {
   if (activeChatSection !== 'chat') {
     openChatSection('chat');
   } else {
-    // Añadir solo el mensaje del usuario en lugar de re-renderizar toda la conversación
     addMessageToDOM(userMessage, true);
   }
   await generateReplyForSession(session, { files: filesToSend });
 }
-
-// Workspace event bindings
 if (chatEls.form) {
   chatEls.form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -2540,7 +2364,6 @@ document.getElementById('chatLogoutBtn')?.addEventListener('click', () => logout
 document.addEventListener('click', (event) => {
   if (chatEls.userMenu && !event.target.closest('.chat-user-row')) chatEls.userMenu.hidden = true;
 });
-// Selector de modelos personalizado
 if (chatEls.modelPickerBtn) {
   chatEls.modelPickerBtn.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -2581,8 +2404,6 @@ document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !chatEls.app.hidden) { event.preventDefault(); startNewChat(); }
   if (event.key === 'Escape' && chatEls.app.classList.contains('sidebar-open')) closeChatSidebar();
 });
-
-// ─── Inicio y retorno de confirmación ──────────────────────
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
   if (path.endsWith('/chat')) return 'chat';
@@ -2603,7 +2424,6 @@ window.addEventListener('popstate', async () => {
   if (!user) { showLandingView(); openAuth('login'); return; }
   setUser(user);
 });
-
 window.addEventListener('hashchange', async () => {
   if (window.location.hash === '#chat') {
     window.history.replaceState({ section: 'chat' }, '', '/SantitosIA/chat');
@@ -2618,17 +2438,14 @@ window.addEventListener('hashchange', async () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 });
-
 (async function init() {
   const params = new URLSearchParams(window.location.search);
   const authError = params.get('error_description') || params.get('error');
   const confirmationReturn = params.has('code') || params.get('type') === 'signup' ||
     window.location.hash.includes('access_token=') || window.location.hash.includes('error=');
-
   sb.auth.onAuthStateChange((event, session) => {
     const user = session && session.user ? session.user : null;
     setUser(user && user.email ? user : null);
-
     if (event === 'SIGNED_IN' && confirmationReturn) {
       msg('Correo confirmado! Has iniciado sesión en SantitosIA.');
       if (els.modal.classList.contains('open')) {
@@ -2637,12 +2454,10 @@ window.addEventListener('hashchange', async () => {
       cleanAuthUrl();
     }
   });
-
   try {
     const { data } = await sb.auth.getSession();
     const user = data && data.session && data.session.user;
     if (user && user.email) setUser(user);
-
     if (authError) {
       openAuth('login');
       msg('No se pudo confirmar el correo: ' + decodeURIComponent(authError.replace(/\+/g, ' ')), true);
@@ -2662,21 +2477,15 @@ window.addEventListener('hashchange', async () => {
     setUser(null);
   }
 })();
-
 function cleanAuthUrl() {
-  // Elimina códigos/tokens de la barra de direcciones una vez procesados.
   const clean = window.location.pathname + window.location.hash.replace(/access_token=[^&]+&?/g, '').replace(/&$/, '');
   window.history.replaceState({}, document.title, clean || window.location.pathname);
 }
-
-// ─── Precios y checkout con PayPal ───────────────────────
 const PAYPAL_CLIENT_ID = 'BAAUy48CAf9uF28_OqlP6OsMGMCvlsESqDcaoYdO1Z3RWHdQ8pIChsRSg0uiem8EQbUMLsu-PeN51dG7kE';
 const PAYPAL_CURRENCY = 'EUR';
 const PAYPAL_PREMIUM_AMOUNT = '3.00';
-
 let paypalSdkLoading = null;
 let paypalButtonsRendered = false;
-
 function loadPayPalSdk() {
   if (!PAYPAL_CLIENT_ID) return Promise.resolve(null);
   if (window.paypal) return Promise.resolve(window.paypal);
@@ -2691,7 +2500,6 @@ function loadPayPalSdk() {
   });
   return paypalSdkLoading;
 }
-
 function activatePremiumLocally() {
   if (!PREMIUM_PLAN_ENABLED) {
     showChatToast('Premium todavía no está disponible; no se ha activado ninguna suscripción.', { important: true });
@@ -2701,16 +2509,13 @@ function activatePremiumLocally() {
   if (chatEls.model) setModelValue('pro', { skipPaywall: true });
   showChatToast('Premium activado.');
 }
-
 function renderPayPalButtons() {
   const host = document.getElementById('paypalButtons');
   const fallback = document.getElementById('checkoutConfirm');
   const hint = document.getElementById('checkoutPayPalHint');
   if (!host) return;
-
   host.innerHTML = '';
   paypalButtonsRendered = false;
-
   if (!PAYPAL_CLIENT_ID) {
     if (fallback) fallback.hidden = false;
     if (hint) {
@@ -2718,10 +2523,8 @@ function renderPayPalButtons() {
     }
     return;
   }
-
   if (fallback) fallback.hidden = true;
   if (hint) hint.textContent = 'El pago se procesa de forma segura. No almacenamos datos de tu tarjeta.';
-
   loadPayPalSdk()
     .then((paypal) => {
       if (!paypal || !paypal.Buttons) {
@@ -2768,7 +2571,6 @@ function renderPayPalButtons() {
       showChatToast('No se pudo cargar PayPal.');
     });
 }
-
 function openCheckout(plan) {
   const modal = document.getElementById('checkoutModal');
   if (!modal) return;
@@ -2782,7 +2584,6 @@ function openCheckout(plan) {
   if (eyebrow) eyebrow.textContent = isPro && !PREMIUM_PLAN_ENABLED ? 'PRÓXIMAMENTE' : (isPro ? 'PAGO' : 'PLAN GRATUITO');
   const host = document.getElementById('paypalButtons');
   const fallback = document.getElementById('checkoutConfirm');
-
   if (title) title.textContent = planName;
   if (price) price.textContent = planPrice;
   if (note) {
@@ -2794,7 +2595,6 @@ function openCheckout(plan) {
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
-
   if (isPro && !PREMIUM_PLAN_ENABLED) {
     if (host) host.replaceChildren();
     if (fallback) { fallback.hidden = false; fallback.disabled = true; fallback.textContent = 'Próximamente'; }
@@ -2806,7 +2606,6 @@ function openCheckout(plan) {
   if (fallback) fallback.disabled = false;
   const hint = document.getElementById('checkoutPayPalHint');
   if (hint) hint.hidden = true;
-
   if (!isPro) {
     if (host) host.innerHTML = '';
     if (fallback) {
@@ -2815,11 +2614,9 @@ function openCheckout(plan) {
     }
     return;
   }
-
   if (fallback) fallback.textContent = 'Continuar con el pago';
   renderPayPalButtons();
 }
-
 function closeCheckout() {
   const modal = document.getElementById('checkoutModal');
   if (!modal) return;
@@ -2829,7 +2626,6 @@ function closeCheckout() {
     document.body.style.overflow = '';
   }
 }
-
 document.addEventListener('click', (e) => {
   const openBtn = e.target.closest('[data-open-checkout]');
   if (openBtn) {
@@ -2841,7 +2637,6 @@ document.addEventListener('click', (e) => {
     closeCheckout();
   }
 });
-
 document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
   const modal = document.getElementById('checkoutModal');
   const plan = modal?.dataset.plan || 'pro';
@@ -2858,7 +2653,6 @@ document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
     }
     return;
   }
-  // Fallback sin Client ID: flujo de prueba local
   if (!PAYPAL_CLIENT_ID) {
     closeCheckout();
     if (!currentAuthUser) {
@@ -2872,9 +2666,6 @@ document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
   }
   showChatToast('Usa el botón de PayPal para completar el pago.');
 });
-
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeCheckout();
 });
-
-// ─── Registro de Service Worker para PWA / Caché offline ───
