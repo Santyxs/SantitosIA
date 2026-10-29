@@ -356,7 +356,7 @@ const CHARACTER_INFO = {
     folder: 'santitos',
     requiresPremium: true,
   },
-  jr: {
+  "santitos-jr": {
     name: 'Santitos Jr.',
     selectorName: 'Santitos Jr.',
     description: 'Joven, cercano y expresivo',
@@ -383,7 +383,7 @@ function canUseCharacter(characterId) {
 }
 function resolveCompanionCharacter(characterId) {
   if (canUseCharacter(characterId)) return characterId;
-  return 'jr';
+  return 'santitos-jr';
 }
 const CHARACTER_EXPRESSIONS = ['reposo', 'pensando', 'hablando', 'sonrisa'];
 function getCompanionPrefs() {
@@ -391,7 +391,7 @@ function getCompanionPrefs() {
   try { value = JSON.parse(safeRead(COMPANION_PREFS_KEY()) || '{}') || {}; } catch (_) {}
   return {
     character: resolveCompanionCharacter(
-      Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'jr'
+      Object.prototype.hasOwnProperty.call(CHARACTER_INFO, value.character) ? value.character : 'santitos-jr'
     ),
     appearance: value.appearance === 'wolf' ? 'wolf' : 'human',
     autoVoice: value.autoVoice === true,
@@ -407,7 +407,7 @@ function saveCompanionPrefs(next) {
   updateChatCompanionBackground('reposo');
   return updated;
 }
-function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
+function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO['santitos-jr']; }
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.webp';
   const CACHE = 'v8';
@@ -468,8 +468,8 @@ function speakText(text) {
   const prefs = getCompanionPrefs();
   const utterance = new SpeechSynthesisUtterance(String(text || '').slice(0, 12000));
   utterance.lang = 'es-ES';
-  utterance.rate = prefs.character === 'jr' ? 1.04 : 0.96;
-  utterance.pitch = prefs.character === 'syntia' ? 1.12 : (prefs.character === 'jr' ? 1.08 : 0.94);
+  utterance.rate = prefs.character === 'santitos-jr' ? 1.04 : 0.96;
+  utterance.pitch = prefs.character === 'syntia' ? 1.12 : (prefs.character === 'santitos-jr' ? 1.08 : 0.94);
   const voices = window.speechSynthesis.getVoices();
   const selectedVoice = voices.find((voice) => voice.voiceURI === prefs.voiceURI);
   const spanishVoice = voices.find((voice) => /^es(-|_)/i.test(voice.lang));
@@ -1745,7 +1745,7 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
   const characterChoices = [
-    { id: 'jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
+    { id: 'santitos-jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
     { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
     { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
   ];
