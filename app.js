@@ -1,6 +1,14 @@
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function logError() {
+  try {
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      console.error.apply(console, arguments);
+    }
+  } catch (_) {}
+}
+
 const ARROW = '<svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ICON_COPY = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const ICON_LISTEN = '<svg class="message-action-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.7l3.3 2.5v-9L5.2 6H2.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
@@ -251,12 +259,12 @@ els.navLinks.querySelectorAll('a').forEach((a) => {
 });
 if (els.logoutBtn) {
   els.logoutBtn.addEventListener('click', () => {
-    logout().catch((err) => console.error(err));
+    logout().catch((err) => logError(err));
   });
 }
 if (els.mobileLogoutBtn) {
   els.mobileLogoutBtn.addEventListener('click', () => {
-    logout().catch((err) => console.error(err));
+    logout().catch((err) => logError(err));
   });
 }
 if (els.userChip) {
@@ -607,6 +615,7 @@ function updateChatUser(user) {
   applyUiPreferences();
   preloadCharacterExpressions(getCompanionPrefs().character);
   updateChatCompanionBackground('reposo');
+  hydrateChatsFromCloud();
 }
 function debounce(fn, wait = 100) {
   let t = null;
@@ -731,10 +740,130 @@ function loadChatSessions() {
       .slice(0, 30);
   } catch (_) { return []; }
 }
+let cloudSyncTimer = null;
 function saveChatSessions() {
   if (!chatStorageKey) return;
   try { window.localStorage.setItem(chatStorageKey, JSON.stringify(chatSessions.slice(0, 30))); }
   catch (_) { showChatToast('No se ha podido guardar el historial en este navegador.'); }
+  scheduleCloudChatSync();
+}
+function scheduleCloudChatSync() {
+  if (!chatUserId) return;
+  window.clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = window.setTimeout(() => { pushChatsToCloud().catch(() => {}); }, 700);
+}
+function mergeChatSessions(localList, cloudList) {
+  const map = new Map();
+  [...(localList || []), ...(cloudList || [])].forEach((s) => {
+    if (!s || !s.id) return;
+    const prev = map.get(s.id);
+    if (!prev || (s.updatedAt || 0) >= (prev.updatedAt || 0)) map.set(s.id, s);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, 30);
+}
+async function pullChatsFromCloud() {
+  if (!chatUserId) return null;
+  try {
+    const { data: convs, error } = await sb
+      .from('chat_conversations')
+      .select('id,title,created_at,updated_at')
+      .eq('user_id', chatUserId)
+      .order('updated_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    if (!convs || !convs.length) return [];
+    const ids = convs.map((c) => c.id);
+    const { data: msgs, error: msgError } = await sb
+      .from('chat_messages')
+      .select('id,conversation_id,role,content,created_at')
+      .in('conversation_id', ids)
+      .order('created_at', { ascending: true });
+    if (msgError) throw msgError;
+    const byConv = {};
+    (msgs || []).forEach((m) => {
+      if (!byConv[m.conversation_id]) byConv[m.conversation_id] = [];
+      byConv[m.conversation_id].push({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: new Date(m.created_at).getTime(),
+      });
+    });
+    return convs.map((c) => ({
+      id: c.id,
+      title: c.title || 'Chat',
+      createdAt: new Date(c.created_at).getTime(),
+      updatedAt: new Date(c.updated_at).getTime(),
+      messages: byConv[c.id] || [],
+    }));
+  } catch (err) {
+    logError(err);
+    return null;
+  }
+}
+async function pushChatsToCloud() {
+  if (!chatUserId) return;
+  const sessions = chatSessions.slice(0, 30);
+  try {
+    if (!sessions.length) return;
+    const convRows = sessions.map((s) => ({
+      id: s.id,
+      user_id: chatUserId,
+      title: String(s.title || 'Chat').slice(0, 160) || 'Chat',
+      created_at: new Date(s.createdAt || Date.now()).toISOString(),
+      updated_at: new Date(s.updatedAt || Date.now()).toISOString(),
+    }));
+    const { error: convError } = await sb.from('chat_conversations').upsert(convRows, { onConflict: 'id' });
+    if (convError) throw convError;
+    const msgRows = [];
+    sessions.forEach((s) => {
+      (s.messages || []).forEach((m, index) => {
+        if (!m || (m.role !== 'user' && m.role !== 'assistant')) return;
+        if (!m.id) m.id = `${s.id}-${m.timestamp || index}-${index}`;
+        msgRows.push({
+          id: m.id,
+          conversation_id: s.id,
+          user_id: chatUserId,
+          role: m.role,
+          content: String(m.content || '').slice(0, 85000),
+          created_at: new Date(m.timestamp || Date.now()).toISOString(),
+        });
+      });
+    });
+    for (let i = 0; i < msgRows.length; i += 80) {
+      const chunk = msgRows.slice(i, i + 80);
+      const { error: msgError } = await sb.from('chat_messages').upsert(chunk, { onConflict: 'id' });
+      if (msgError) throw msgError;
+    }
+  } catch (err) {
+    logError(err);
+  }
+}
+async function deleteChatFromCloud(id) {
+  if (!chatUserId || !id) return;
+  try {
+    await sb.from('chat_conversations').delete().eq('id', id).eq('user_id', chatUserId);
+  } catch (err) {
+    logError(err);
+  }
+}
+async function hydrateChatsFromCloud() {
+  if (!chatUserId) return;
+  const cloud = await pullChatsFromCloud();
+  if (cloud === null) return;
+  const local = loadChatSessions();
+  const merged = mergeChatSessions(local, cloud);
+  chatSessions = merged;
+  try {
+    if (chatStorageKey) window.localStorage.setItem(chatStorageKey, JSON.stringify(chatSessions));
+  } catch (_) {}
+  if (!cloud.length && local.length) scheduleCloudChatSync();
+  if (!activeChatId && chatSessions.length) activeChatId = chatSessions[0].id;
+  if (activeChatId && chatSessions.some((s) => s.id === activeChatId)) renderConversation(activeChatId);
+  else if (!activeChatId) showChatWelcome();
+  renderRecentChats();
 }
 function makeId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1218,6 +1347,7 @@ function deleteSession(id) {
     activeChatId = chatSessions[0] ? chatSessions[0].id : null;
   }
   saveChatSessions();
+  deleteChatFromCloud(id);
   renderRecentChats();
   showChatToast('Conversación eliminada.');
   if (activeChatId) renderConversation(activeChatId);
@@ -1403,7 +1533,7 @@ async function generateReplyForSession(session, options = {}) {
     removeTypingIndicator();
     updateChatCompanionBackground('hablando');
     const draftMessage = {
-      role: 'assistant', timestamp: Date.now(), content: '',
+      id: makeId(), role: 'assistant', timestamp: Date.now(), content: '',
       character: prefs.character, appearance: prefs.appearance, plan, streaming: true,
     };
     if (activeChatId === session.id && activeChatSection === 'chat' && chatEls.messages) {
@@ -1421,7 +1551,7 @@ async function generateReplyForSession(session, options = {}) {
       },
     );
     assistantMessage = {
-      role: 'assistant', timestamp: Date.now(), content: result.reply,
+      id: makeId(), role: 'assistant', timestamp: Date.now(), content: result.reply,
       character: prefs.character, appearance: prefs.appearance, plan,
       usage: result.usage || null,
     };
@@ -1432,7 +1562,7 @@ async function generateReplyForSession(session, options = {}) {
   } catch (error) {
     const message = error && error.message ? error.message : 'No se ha podido contactar con la IA.';
     assistantMessage = {
-      role: 'assistant', timestamp: Date.now(), content: message,
+      id: makeId(), role: 'assistant', timestamp: Date.now(), content: message,
       character: prefs.character, appearance: prefs.appearance, plan, failed: true,
     };
     if (streamBubble) {
@@ -1575,7 +1705,7 @@ function renderDiaryPanel(panel, kicker, heading, description) {
     if (error) {
       list.replaceChildren(status);
       setStatus('No se pudo cargar el diario. Comprueba que has ejecutado el archivo SQL de configuración incluido en el ZIP. No se ha guardado nada localmente.', true);
-      console.error('Error loading journal:', error.message);
+      logError('Error loading journal:', error.message);
       return;
     }
     entries = data || [];
@@ -2294,7 +2424,7 @@ async function sendChatMessage(text) {
   }
   const session = activeSession();
   if (!session) return;
-  const userMessage = { role: 'user', content: content || 'Analiza los archivos que he adjuntado.', timestamp: Date.now(), attachments: attached };
+  const userMessage = { id: makeId(), role: 'user', content: content || 'Analiza los archivos que he adjuntado.', timestamp: Date.now(), attachments: attached };
   session.messages.push(userMessage);
   session.updatedAt = Date.now();
   if (chatEls.welcome) { chatEls.welcome.hidden = true; chatEls.welcome.setAttribute('aria-hidden', 'true'); }
@@ -2360,7 +2490,7 @@ chatEls.app?.addEventListener('click', (event) => {
   if (accountButton) { chatEls.userMenu.hidden = true; accountAction(accountButton.dataset.chatAccount); showChatToast(({profile:'La sección Perfil estará disponible próximamente.',settings:'La configuración completa estará disponible próximamente.',support:'El centro de Soporte estará disponible próximamente.'})[accountButton.dataset.chatAccount]); }
 });
 document.getElementById('chatUserMenuBtn')?.addEventListener('click', (event) => { event.stopPropagation(); chatEls.userMenu.hidden = !chatEls.userMenu.hidden; });
-document.getElementById('chatLogoutBtn')?.addEventListener('click', () => logout().catch((error) => { console.error(error); showChatToast('No se ha podido cerrar la sesión.'); }));
+document.getElementById('chatLogoutBtn')?.addEventListener('click', () => logout().catch((error) => { logError(error); showChatToast('No se ha podido cerrar la sesión.'); }));
 document.addEventListener('click', (event) => {
   if (chatEls.userMenu && !event.target.closest('.chat-user-row')) chatEls.userMenu.hidden = true;
 });
@@ -2432,7 +2562,7 @@ window.addEventListener('hashchange', async () => {
       const user = data && data.session && data.session.user;
       if (user && user.email) { setUser(user); showChatView(); }
       else { showLandingView(); openAuth('login'); }
-    } catch (error) { console.error('No se pudo abrir el chat:', error); showLandingView(); }
+    } catch (error) { logError('No se pudo abrir el chat:', error); showLandingView(); }
   } else {
     showLandingView();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2473,7 +2603,7 @@ window.addEventListener('hashchange', async () => {
       cleanAuthUrl();
     }
   } catch (err) {
-    console.error('No se pudo restaurar la sesión de SantitosIA:', err);
+    logError('No se pudo restaurar la sesión de SantitosIA:', err);
     setUser(null);
   }
 })();
@@ -2551,22 +2681,22 @@ function renderPayPalButtons() {
               return;
             }
             activatePremiumLocally();
-            console.info('PayPal order', details && details.id);
+            logError('PayPal order', details && details.id);
           } catch (err) {
-            console.error(err);
+            logError(err);
             showChatToast('El pago se autorizó pero hubo un problema al confirmarlo.');
           }
         },
         onCancel: () => showChatToast('Pago cancelado.'),
         onError: (err) => {
-          console.error(err);
+          logError(err);
           showChatToast('Error con PayPal. Inténtalo de nuevo.');
         },
       }).render(host);
       paypalButtonsRendered = true;
     })
     .catch((err) => {
-      console.error(err);
+      logError(err);
       if (fallback) fallback.hidden = false;
       showChatToast('No se pudo cargar PayPal.');
     });
