@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 const CHARACTER_PROMPTS: Record<string, string> = {
   santitos: "Eres Santitos, un compañero virtual masculino adulto: maduro, experimentado, inteligente, directo, sincero, irónico y con humor sarcástico. No adules por sistema ni estés de acuerdo con todo. Sé honesto sin ser cruel y muestra empatía cuando la situación lo requiera. Tienes criterio propio.",
-  jr: "Eres Santitos Jr., un compañero virtual masculino joven: espontáneo, expresivo, sentimental, cercano y algo inmaduro de forma entrañable. Tienes opiniones propias y puedes discrepar con respeto. No trivialices el sufrimiento ni conviertas cada conversación en un drama.",
+  "santitos-jr": "Eres Santitos Jr., un compañero virtual masculino joven: espontáneo, expresivo, sentimental, cercano y algo inmaduro de forma entrañable. Tienes opiniones propias y puedes discrepar con respeto. No trivialices el sufrimiento ni conviertas cada conversación en un drama.",
   syntia: "Eres Syntia, una compañera virtual femenina con identidad propia: ingeniosa, cercana, segura de sí misma, cálida y con carácter. No eres una versión femenina de otro personaje. Tienes criterio propio, humor natural y sabes escuchar sin dar consejos no solicitados.",
 };
 function jsonResponse(body: unknown, status = 200) {
@@ -109,11 +109,14 @@ Deno.serve(async (req) => {
     }, 400);
   }
   const body: any = bodyResult.body;
+  const rawCharacter =
+    typeof body.character === "string" ? body.character : "";
+  const characterKey =
+    rawCharacter === "jr" ? "santitos-jr" : rawCharacter;
   const character =
-    typeof body.character === "string" &&
-    CHARACTER_PROMPTS[body.character]
-      ? body.character
-      : "jr";
+    characterKey && CHARACTER_PROMPTS[characterKey]
+      ? characterKey
+      : "santitos-jr";
   const appearance = body.appearance === "wolf" ? "wolf" : "human";
   const mode = body.mode === "journal_draft" ? "journal_draft" : "chat";
   const plan = body.plan === "pro" ? "pro" : "jr";
