@@ -1,3 +1,13 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><title>SantitosIA</title>
-<script>location.replace("/SantitosIA/"+location.search+location.hash);</script>
-<meta http-equiv="refresh" content="0;url=/SantitosIA/"></head><body></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>SantitosIA</title>
+  <script>
+    sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash);
+    location.replace('/SantitosIA/');
+  </script>
+  <meta http-equiv="refresh" content="0;url=/SantitosIA/">
+</head>
+<body></body>
+</html>
