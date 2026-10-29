@@ -387,6 +387,9 @@ const ALL_ATTACHMENT_TYPES = 'image/*,.txt,.md,.json,.yml,.yaml,.java,.js,.py,.h
 let webSearchEnabled = false;
 let toastTimer = null;
 let aiRequestInProgress = false;
+let currentAiAbortController = null;
+const SEND_ICON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>';
+const STOP_ICON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"></rect></svg>';
 const COMPANION_PREFS_KEY = () => `santitosia:companion:${chatUserId || 'guest'}`;
 const PREMIUM_PLAN_ENABLED = false;
 const CHARACTER_INFO = {
@@ -533,6 +536,41 @@ function speakText(text) {
   window.speechSynthesis.speak(utterance);
   return true;
 }
+
+async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(String(e.target.result || ''));
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.src = String(e.target.result || '');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function readAttachmentData(files) {
   const result = { text: '', images: [] };
   for (const file of (files || []).slice(0, 8)) {
@@ -540,14 +578,12 @@ async function readAttachmentData(files) {
     const extension = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
     const isImage = /^image\/(png|jpeg|webp|gif)$/i.test(file.type || '') && ['png','jpg','jpeg','webp','gif'].includes(extension);
     if (isImage) {
-      if (file.size > 500000) { showChatToast(`La imagen «${name}» supera 500 KB y no se ha enviado.`); continue; }
       try {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || ''));
-          reader.onerror = reject; reader.readAsDataURL(file);
-        });
-        result.images.push({ name, dataUrl });
-      } catch (_) { showChatToast(`No se ha podido leer la imagen «${name}».`); }
+        const compressedDataUrl = await compressImageAttachment(file);
+        result.images.push({ name, dataUrl: compressedDataUrl });
+      } catch (err) {
+        showChatToast("No se ha podido procesar la imagen.");
+      }
       continue;
     }
     const textExtensions = ['txt','md','json','yml','yaml','java','js','py','html','css','xml','properties','log','toml','sql','csv','gradle','kt','ts','tsx','jsx','ini','conf','cfg'];
@@ -959,7 +995,12 @@ function createMessageNode(item, addActions) {
   const time = document.createElement('time');
   const date = new Date(item.timestamp || Date.now());
   time.textContent = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); meta.append(time);
-  const bubble = document.createElement('div'); bubble.className = 'message-bubble'; bubble.textContent = item.content || '';
+  const bubble = document.createElement('div'); bubble.className = 'message-bubble';
+  if (role === 'assistant') {
+    bubble.innerHTML = formatChatMarkdown(item.content || '');
+  } else {
+    bubble.textContent = item.content || '';
+  }
   body.append(meta, bubble);
   if (Array.isArray(item.attachments) && item.attachments.length) {
     const files = document.createElement('div'); files.className = 'message-actions';
@@ -1118,6 +1159,149 @@ function renderAttachmentPreview() {
     pill.append(icon, name, remove); chatEls.attachmentPreview.append(pill);
   });
 }
+
+// ─── Formateador Markdown y Bloques de Código ──────────────
+function escapeHtmlEntities(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+function formatChatMarkdown(rawText) {
+  if (!rawText) return '';
+  const text = String(rawText);
+  const codeBlocks = [];
+
+  // Extraer bloques de código con triple backtick
+  const placeholderText = text.replace(/\x60{3}([a-zA-Z0-9_-]*)[\r\n]*([\s\S]*?)\x60{3}/g, (_match, lang, code) => {
+    const id = codeBlocks.length;
+    codeBlocks.push({ lang: lang ? lang.trim() : 'código', code: code.replace(/\r?\n$/, '') });
+    return '\n%%CODEBLOCK_' + id + '%%\n';
+  });
+
+  const lines = placeholderText.split(/\r?\n/);
+  const htmlParts = [];
+  let inList = false;
+  let listType = null; // 'ul' | 'ol'
+
+  function closeList() {
+    if (inList) {
+      htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+      inList = false;
+      listType = null;
+    }
+  }
+
+  function inlineFormat(lineStr) {
+    let out = escapeHtmlEntities(lineStr);
+
+    // Código en línea: `código`
+    out = out.replace(/\x60([^\x60]+)\x60/g, '<code class="inline-code">$1</code>');
+
+    // Negrita: **texto**
+    out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Enlaces markdown: [texto](url)
+    out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" class="chat-link" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // Cursiva: *texto* o _texto_ (evitando tags HTML ya creados)
+    out = out.replace(/(^|[\s.,;:!?])\*([^\*\n]+)\*([\s.,;:!?]|$)/g, '$1<em>$2</em>$3');
+    out = out.replace(/(^|[\s.,;:!?])_([^_\n]+)_([\s.,;:!?]|$)/g, '$1<em>$2</em>$3');
+
+    // Tachado: ~~texto~~
+    out = out.replace(/~~(.+?)~~/g, '<s>$1</s>');
+
+    return out;
+  }
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      closeList();
+      continue;
+    }
+
+    // Placeholder de bloque de código
+    const blockMatch = trimmed.match(/^%%CODEBLOCK_(\d+)%%$/);
+    if (blockMatch) {
+      closeList();
+      const block = codeBlocks[Number(blockMatch[1])];
+      if (block) {
+        const langEscaped = escapeHtmlEntities(block.lang);
+        const codeEscaped = escapeHtmlEntities(block.code);
+        htmlParts.push(
+          '<div class="chat-code-block">' +
+            '<div class="chat-code-header">' +
+              '<span>' + (langEscaped || 'código') + '</span>' +
+              '<button type="button" class="code-copy-btn" onclick="copyCodeBlock(this)">Copiar</button>' +
+            '</div>' +
+            '<pre><code>' + codeEscaped + '</code></pre>' +
+          '</div>'
+        );
+      }
+      continue;
+    }
+
+    // Listas no ordenadas: - o *
+    const bulletMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      if (!inList || listType !== 'ul') {
+        closeList();
+        htmlParts.push('<ul class="chat-list">');
+        inList = true;
+        listType = 'ul';
+      }
+      htmlParts.push('<li class="chat-list-item">' + inlineFormat(bulletMatch[2]) + '</li>');
+      continue;
+    }
+
+    // Listas ordenadas: 1. 2. etc.
+    const numMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+    if (numMatch) {
+      if (!inList || listType !== 'ol') {
+        closeList();
+        htmlParts.push('<ol class="chat-list">');
+        inList = true;
+        listType = 'ol';
+      }
+      htmlParts.push('<li class="chat-list-item">' + inlineFormat(numMatch[2]) + '</li>');
+      continue;
+    }
+
+    // Cita: >
+    const quoteMatch = line.match(/^>\s*(.+)$/);
+    if (quoteMatch) {
+      closeList();
+      htmlParts.push('<blockquote class="chat-quote">' + inlineFormat(quoteMatch[1]) + '</blockquote>');
+      continue;
+    }
+
+    // Párrafo normal
+    closeList();
+    htmlParts.push('<p>' + inlineFormat(line) + '</p>');
+  }
+
+  closeList();
+  return htmlParts.join('');
+}
+
+function copyCodeBlock(button) {
+  const codeBlock = button.closest('.chat-code-block');
+  const codeEl = codeBlock ? codeBlock.querySelector('code') : null;
+  const text = codeEl ? codeEl.innerText : '';
+  copyText(text).then(() => {
+    const orig = button.textContent;
+    button.textContent = '¡Copiado!';
+    setTimeout(() => { button.textContent = orig; }, 1800);
+  });
+}
+window.copyCodeBlock = copyCodeBlock;
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 }
@@ -1222,7 +1406,7 @@ async function callCompanionAI({ messages, mode: requestMode = 'chat', images = 
 }
 
 /** Streaming SSE desde la edge function (formato OpenAI / OpenRouter). */
-async function callCompanionAIStream({ messages, mode: requestMode = 'chat', images = [] }, onToken) {
+async function callCompanionAIStream({ messages, mode: requestMode = 'chat', images = [] }, onToken, signal) {
   const prefs = getCompanionPrefs();
   const plan = chatEls.model && chatEls.model.value === 'pro' ? 'pro' : 'jr';
   const { data: sessionData } = await sb.auth.getSession();
@@ -2692,3 +2876,12 @@ document.getElementById('checkoutConfirm')?.addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeCheckout();
 });
+
+// ─── Registro de Service Worker para PWA / Caché offline ───
+if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('No se pudo registrar ServiceWorker:', err);
+    });
+  });
+}

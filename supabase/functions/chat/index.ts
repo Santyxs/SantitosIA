@@ -43,6 +43,14 @@ function getPublishableKey(): string | null {
   }
 }
 
+async function refundQuota(adminClient: any, userId: string) {
+  try {
+    await adminClient.rpc("refund_ai_daily_limit", { p_user_id: userId });
+  } catch (err) {
+    console.error("Error refunding quota:", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -324,12 +332,14 @@ Deno.serve(async (req) => {
       },
     );
   } catch {
+    await refundQuota(adminClient, user.id);
     return jsonResponse({
       error: "No se pudo conectar con el proveedor de IA. Inténtalo de nuevo más tarde.",
     }, 502);
   }
 
   if (!upstream.ok) {
+    await refundQuota(adminClient, user.id);
     const upstreamData = await upstream.json().catch(() => ({}));
     console.error(
       "OpenRouter response:",
@@ -368,6 +378,7 @@ Deno.serve(async (req) => {
   const reply = upstreamData?.choices?.[0]?.message?.content;
 
   if (typeof reply !== "string" || !reply.trim()) {
+    await refundQuota(adminClient, user.id);
     return jsonResponse({
       error: "La IA devolvió una respuesta vacía. Inténtalo de nuevo.",
     }, 502);
