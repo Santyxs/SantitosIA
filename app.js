@@ -225,7 +225,13 @@ async function register(email, password) {
   if (data.session) {
     setUser(data.user);
     msg('Cuenta creada! Ya has iniciado sesión.');
-    setTimeout(closeAuth, 1100);
+    setTimeout(() => {
+      closeAuth();
+      window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+      showChatView();
+      const active = activeSession();
+      if (active) renderConversation(active.id); else showChatWelcome();
+    }, 500);
   } else {
     msg('Cuenta creada. Revisa tu correo para confirmarla e inicia sesión.');
   }
