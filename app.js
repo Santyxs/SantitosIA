@@ -1,6 +1,19 @@
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+(function restoreSpaPath() {
+  try {
+    const redirect = sessionStorage.getItem('spa-redirect');
+    if (!redirect) return;
+    sessionStorage.removeItem('spa-redirect');
+    const url = new URL(redirect, window.location.origin);
+    if (url.pathname.toLowerCase().indexOf('/santitosia') === 0 && url.href !== window.location.href) {
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  } catch (_) {}
+})();
+
 function logError() {
   try {
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
@@ -222,7 +235,13 @@ async function login(email, password) {
   if (error) throw error;
   setUser(data.user);
   msg('Bienvenido de nuevo!');
-  setTimeout(closeAuth, 900);
+  setTimeout(() => {
+    closeAuth();
+    window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+    showChatView();
+    const active = activeSession();
+    if (active) renderConversation(active.id); else showChatWelcome();
+  }, 500);
 }
 async function logout() {
   await sb.auth.signOut();
@@ -233,9 +252,11 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-open-auth]');
   if (t) {
     e.preventDefault();
-    if (t.dataset.openAuth === 'register' && currentAuthUser) {
+    if (currentAuthUser && (t.dataset.openAuth === 'register' || t.dataset.openAuth === 'login')) {
       window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
       showChatView();
+      const active = activeSession();
+      if (active) renderConversation(active.id); else showChatWelcome();
       return;
     }
     openAuth(t.dataset.openAuth);
