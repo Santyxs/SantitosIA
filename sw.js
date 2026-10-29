@@ -5,7 +5,7 @@ const ASSETS_TO_CACHE = [
   './styles.css',
   './app.js',
   './manifest.json',
-  './assets/logo.jpg',
+  './assets/logo.png',
   './assets/favicon.webp',
   './assets/icon-180.png',
   './assets/icon-192.png',
