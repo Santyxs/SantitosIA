@@ -1,7 +1,3 @@
--- Fix Performance Advisor: auth_rls_initplan + multiple_permissive_policies
--- Wrap auth.uid() in (select auth.uid()) so it is evaluated once per query.
--- Collapse duplicate permissive SELECT policies on public.profiles.
-
 -- journal_entries
 drop policy if exists "Users can read their own journal entries" on public.journal_entries;
 create policy "Users can read their own journal entries"
