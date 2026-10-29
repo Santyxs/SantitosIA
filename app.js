@@ -458,7 +458,7 @@ function saveCompanionPrefs(next) {
 }
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO.jr; }
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
-  if (appearance === 'wolf') return 'assets/logo.webp';
+  if (appearance === 'wolf') return 'assets/logo.jpg';
   const CACHE = 'v7';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
@@ -467,7 +467,7 @@ function getCharacterImagePath(characterId, expression = 'reposo', appearance = 
 }
 function assistantAvatarMarkup(characterId, appearance, expression = 'reposo') {
   const src = getCharacterImagePath(characterId, expression, appearance);
-  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" decoding="async" loading="lazy" onerror="this.onerror=null;this.src='assets/logo.webp';" />`;
+  return `<img src="${src}" alt="" class="companion-face" data-expression="${expression}" decoding="async" loading="lazy" onerror="this.onerror=null;this.src='assets/logo.jpg';" />`;
 }
 let companionExpressionTimer = null;
 let currentCompanionExpression = 'reposo';
@@ -478,7 +478,7 @@ function preloadCharacterExpressions(characterId) {
     img.src = getCharacterImagePath(characterId, expr, 'human');
   });
   const logo = new Image();
-  logo.src = 'assets/logo.webp';
+  logo.src = 'assets/logo.jpg';
 }
 
 function setCompanionVisible(visible) {
