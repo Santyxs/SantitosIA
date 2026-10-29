@@ -1,7 +1,3 @@
--- SantitosIA: diario personal con RLS y cuota diaria de IA.
--- Ejecutar una sola vez desde Supabase SQL Editor o mediante Supabase CLI.
--- Nota: current_date usa la zona horaria del servidor de Supabase (normalmente UTC).
-
 create table if not exists public.journal_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -12,35 +8,28 @@ create table if not exists public.journal_entries (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index if not exists journal_entries_user_updated_idx
   on public.journal_entries (user_id, updated_at desc);
-
 alter table public.journal_entries enable row level security;
 grant select, insert, update, delete on public.journal_entries to authenticated;
 revoke all on public.journal_entries from anon;
-
 drop policy if exists "Users can read their own journal entries" on public.journal_entries;
 create policy "Users can read their own journal entries"
   on public.journal_entries for select to authenticated
   using (auth.uid() = user_id);
-
 drop policy if exists "Users can create their own journal entries" on public.journal_entries;
 create policy "Users can create their own journal entries"
   on public.journal_entries for insert to authenticated
   with check (auth.uid() = user_id);
-
 drop policy if exists "Users can update their own journal entries" on public.journal_entries;
 create policy "Users can update their own journal entries"
   on public.journal_entries for update to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
-
 drop policy if exists "Users can delete their own journal entries" on public.journal_entries;
 create policy "Users can delete their own journal entries"
   on public.journal_entries for delete to authenticated
   using (auth.uid() = user_id);
-
 create or replace function public.set_journal_entry_updated_at()
 returns trigger
 language plpgsql
@@ -51,27 +40,21 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists journal_entries_set_updated_at on public.journal_entries;
 create trigger journal_entries_set_updated_at
   before update on public.journal_entries
   for each row execute function public.set_journal_entry_updated_at();
-
--- La tabla de cuota no es legible/escribible directamente desde el navegador.
 create table if not exists public.daily_ai_usage (
   user_id uuid not null references auth.users(id) on delete cascade,
   usage_date date not null default (timezone('utc', now()))::date,
   request_count integer not null default 0 check (request_count >= 0),
   primary key (user_id, usage_date)
 );
-
 alter table public.daily_ai_usage enable row level security;
 revoke all on public.daily_ai_usage from anon, authenticated;
-
 drop function if exists public.consume_ai_daily_limit(integer);
 drop function if exists public.consume_ai_daily_limit();
 drop function if exists public.consume_ai_daily_limit(uuid);
-
 create or replace function public.consume_ai_daily_limit(p_user_id uuid)
 returns table (allowed boolean, used integer, daily_limit integer)
 language plpgsql
@@ -82,21 +65,17 @@ declare
   v_user_id uuid := p_user_id;
   v_count integer;
   v_today date := (timezone('utc', now()))::date;
-  -- En esta primera versión todos los perfiles tienen el mismo límite.
-  -- Premium permanece desactivado hasta conectar pagos verificados en servidor.
   v_limit integer := 5;
 begin
   if v_user_id is null then
     raise exception 'User id required';
   end if;
-
   insert into public.daily_ai_usage (user_id, usage_date, request_count)
   values (v_user_id, v_today, 1)
   on conflict (user_id, usage_date)
   do update set request_count = public.daily_ai_usage.request_count + 1
     where public.daily_ai_usage.request_count < v_limit
   returning request_count into v_count;
-
   if v_count is null then
     select d.request_count into v_count
       from public.daily_ai_usage d
@@ -107,37 +86,27 @@ begin
   end if;
 end;
 $$;
-
--- Permite reembolsar una peticin si el upstream (OpenRouter) falla
 create or replace function public.refund_ai_daily_limit(p_user_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
-as 
+as
 declare
   v_today date := (timezone('utc', now()))::date;
 begin
   if p_user_id is null then
     return;
   end if;
-
   update public.daily_ai_usage
     set request_count = greatest(0, request_count - 1)
     where user_id = p_user_id and usage_date = v_today;
 end;
 ;
-
--- Solo el backend (service_role) puede ejecutarlas; no deben estar en la API de usuarios.
 revoke all on function public.consume_ai_daily_limit(uuid) from public, anon, authenticated;
 grant execute on function public.consume_ai_daily_limit(uuid) to service_role;
-
 revoke all on function public.refund_ai_daily_limit(uuid) from public, anon, authenticated;
 grant execute on function public.refund_ai_daily_limit(uuid) to service_role;
-
-
--- Impide que un usuario se otorgue un plan de pago modificando su perfil desde el navegador.
--- Las futuras activaciones de suscripción deben hacerse desde un backend/verificador de pagos.
 create or replace function public.prevent_client_plan_change()
 returns trigger
 language plpgsql
@@ -156,7 +125,6 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists profiles_prevent_client_plan_change on public.profiles;
 create trigger profiles_prevent_client_plan_change
   before insert or update on public.profiles
