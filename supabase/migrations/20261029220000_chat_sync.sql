@@ -76,6 +76,3 @@ create policy "chat_messages_delete_own"
   on public.chat_messages for delete to authenticated
   using ((select auth.uid()) = user_id);
 
--- Cleanup legacy artifacts if present
-drop index if exists public.messages_conversation_created_idx;
-drop index if exists public.messages_conversation_id_idx;
