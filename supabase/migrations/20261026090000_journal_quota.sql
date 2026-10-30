@@ -1,5 +1,4 @@
--- Journal entries + daily AI quota (final correct definitions)
--- Idempotent: safe to re-run on existing projects.
+-- Journal entries + daily AI quota
 
 create table if not exists public.journal_entries (
   id uuid primary key default gen_random_uuid(),
@@ -157,7 +156,7 @@ create trigger profiles_prevent_client_plan_change
   for each row execute function public.prevent_client_plan_change();
 
 
--- Profiles RLS (optimized, single policy per action)
+-- Profiles RLS
 drop policy if exists "Read own profile" on public.profiles;
 drop policy if exists "profiles_select_own" on public.profiles;
 drop policy if exists profiles_select_own on public.profiles;
