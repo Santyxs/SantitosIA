@@ -403,8 +403,17 @@ const CHARACTER_INFO = {
   syntia: {
     name: 'Syntia',
     selectorName: 'Syntia',
-    description: 'Ingeniosa, cercana y resolutiva',
+    description: 'Madura, directa y con carácter',
     icon: '✦',
+    color: 'syntia',
+    folder: 'syntia',
+    requiresPremium: true,
+  },
+  "syntia-jr": {
+    name: 'Syntia Jr.',
+    selectorName: 'Syntia Jr.',
+    description: 'Joven, cercana y expresiva',
+    icon: '✧',
     color: 'syntia',
     folder: 'syntia',
     requiresPremium: false,
@@ -503,8 +512,10 @@ function speakText(text) {
   const prefs = getCompanionPrefs();
   const utterance = new SpeechSynthesisUtterance(String(text || '').slice(0, 12000));
   utterance.lang = 'es-ES';
-  utterance.rate = prefs.character === 'santitos-jr' ? 1.04 : 0.96;
-  utterance.pitch = prefs.character === 'syntia' ? 1.12 : (prefs.character === 'santitos-jr' ? 1.08 : 0.94);
+  utterance.rate = (prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr') ? 1.04 : 0.96;
+  utterance.pitch = (prefs.character === 'syntia' || prefs.character === 'syntia-jr')
+    ? (prefs.character === 'syntia-jr' ? 1.14 : 1.10)
+    : (prefs.character === 'santitos-jr' ? 1.08 : 0.94);
   const voices = window.speechSynthesis.getVoices();
   const selectedVoice = voices.find((voice) => voice.voiceURI === prefs.voiceURI);
   const spanishVoice = voices.find((voice) => /^es(-|_)/i.test(voice.lang));
@@ -2008,16 +2019,17 @@ function renderCompanionPanel(panel, kicker, heading, description) {
   selectorTitle.textContent = 'Tu asistente';
   const selectorHelp = document.createElement('span');
   selectorHelp.textContent = PREMIUM_PLAN_ENABLED && hasPremiumPlan()
-    ? '3 avatares disponibles'
-    : '2 avatares gratis · 1 Premium';
+    ? '4 avatares disponibles'
+    : '2 avatares gratis · 2 Premium';
   selectorHeading.append(selectorTitle, selectorHelp);
   const characterGrid = document.createElement('div');
   characterGrid.className = 'companion-character-grid';
   const characterButtons = new Map();
   const characterChoices = [
     { id: 'santitos-jr', label: 'Santitos Jr.', type: 'Gratis', detail: 'Expresivo y desenfadado' },
-    { id: 'syntia', label: 'Syntia', type: 'Gratis', detail: 'Cercana e ingeniosa' },
+    { id: 'syntia-jr', label: 'Syntia Jr.', type: 'Gratis', detail: 'Cercana y expresiva' },
     { id: 'santitos', label: 'Santitos', type: 'Premium', detail: 'Directo y resolutivo', premium: true },
+    { id: 'syntia', label: 'Syntia', type: 'Premium', detail: 'Madura y con carácter', premium: true },
   ];
   const appearanceSelect = document.createElement('select');
   appearanceSelect.className = 'settings-model-select';
@@ -2055,8 +2067,10 @@ function renderCompanionPanel(panel, kicker, heading, description) {
     const characterDescription = current.character === 'santitos'
       ? 'Santitos Premium · directo, maduro y con carácter'
       : current.character === 'syntia'
-        ? 'Syntia · cercana, ingeniosa y resolutiva'
-        : 'Santitos Jr. · expresivo y desenfadado';
+        ? 'Syntia Premium · madura, directa y con carácter'
+        : current.character === 'syntia-jr'
+          ? 'Syntia Jr. · cercana, joven y expresiva'
+          : 'Santitos Jr. · expresivo y desenfadado';
     detail.textContent = `${current.appearance === 'wolf' ? 'Forma de lobo' : characterDescription}`;
     avatar.className = `companion-preview-avatar companion-avatar-${info.color}${current.appearance === 'wolf' ? ' companion-preview-wolf' : ''}`;
     avatar.replaceChildren();
