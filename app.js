@@ -415,7 +415,7 @@ const CHARACTER_INFO = {
     description: 'Joven, cercana y expresiva',
     icon: '✧',
     color: 'syntia',
-    folder: 'syntia',
+    folder: 'syntia-jr',
     requiresPremium: false,
   },
 };
