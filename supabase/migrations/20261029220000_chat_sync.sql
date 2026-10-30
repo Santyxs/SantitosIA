@@ -1,4 +1,4 @@
--- Chat conversations + messages (synced from client) + indexes
+-- Chat conversations + messages + indexes
 
 create table if not exists public.chat_conversations (
   id text primary key,
