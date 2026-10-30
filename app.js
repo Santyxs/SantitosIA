@@ -397,7 +397,7 @@ const CHARACTER_INFO = {
     description: 'Joven, cercano y expresivo',
     icon: '✧',
     color: 'jr',
-    folder: 'santitos',
+    folder: 'santitos-jr',
     requiresPremium: false,
   },
   syntia: {
