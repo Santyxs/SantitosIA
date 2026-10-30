@@ -155,3 +155,27 @@ drop trigger if exists profiles_prevent_client_plan_change on public.profiles;
 create trigger profiles_prevent_client_plan_change
   before insert or update on public.profiles
   for each row execute function public.prevent_client_plan_change();
+
+
+-- Profiles RLS (optimized, single policy per action)
+drop policy if exists "Read own profile" on public.profiles;
+drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists profiles_select_own on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
+drop policy if exists profiles_update_own on public.profiles;
+drop policy if exists "Update own profile" on public.profiles;
+drop policy if exists "Users can read own profile" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+
+create policy "profiles_select_own"
+  on public.profiles
+  for select
+  to authenticated
+  using ((select auth.uid()) = id);
+
+create policy "profiles_update_own"
+  on public.profiles
+  for update
+  to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
