@@ -2,12 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SantitosIA</title>
   <script>
-    sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash);
-    location.replace('/SantitosIA/');
+    (function () {
+      var base = location.hostname === 'santyxs.github.io' ? '/SantitosIA/' : '/';
+      var path = location.pathname;
+      if (location.hostname === 'santyxs.github.io' && path.indexOf('/SantitosIA/') !== 0) {
+        path = '/SantitosIA' + (path.charAt(0) === '/' ? path : '/' + path);
+      }
+      try {
+        sessionStorage.setItem('spa-redirect', path + location.search + location.hash);
+      } catch (_) {}
+      location.replace(base);
+    })();
   </script>
-  <meta http-equiv="refresh" content="0;url=/SantitosIA/">
 </head>
 <body></body>
 </html>

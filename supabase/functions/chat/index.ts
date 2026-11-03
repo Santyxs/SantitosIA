@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://santyxs.github.io",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Expose-Headers": "X-Daily-Used, X-Daily-Limit, X-Model",
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Método no permitido." }, 405);
   }
   const origin = req.headers.get("origin");
-  if (origin && origin !== "https://santyxs.github.io") {
+  if (origin && !["https://santyxs.github.io", "https://santitosia.onrender.com"].includes(origin)) {
     return jsonResponse({ error: "Origen no permitido." }, 403);
   }
   const authHeader = req.headers.get("Authorization");
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
         headers: {
           Authorization: `Bearer ${openRouterKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://santyxs.github.io/SantitosIA/",
+          "HTTP-Referer": "https://santitosia.onrender.com/",
           "X-Title": "SantitosIA",
         },
         body: JSON.stringify({

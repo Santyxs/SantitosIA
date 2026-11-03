@@ -1,6 +1,8 @@
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const APP_BASE_PATH = window.location.hostname === 'santyxs.github.io' ? '/SantitosIA' : '';
+function appPath(route) { return `${APP_BASE_PATH}/${String(route || '').replace(/^\/+/, '')}`; }
 
 (function restoreSpaPath() {
   try {
@@ -227,7 +229,7 @@ async function register(email, password) {
     msg('Cuenta creada! Ya has iniciado sesión.');
     setTimeout(() => {
       closeAuth();
-      window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+      window.history.pushState({ section: 'chat' }, '', appPath('chat'));
       showChatView();
       const active = activeSession();
       if (active) renderConversation(active.id); else showChatWelcome();
@@ -243,7 +245,7 @@ async function login(email, password) {
   msg('Bienvenido de nuevo!');
   setTimeout(() => {
     closeAuth();
-    window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+    window.history.pushState({ section: 'chat' }, '', appPath('chat'));
     showChatView();
     const active = activeSession();
     if (active) renderConversation(active.id); else showChatWelcome();
@@ -259,7 +261,7 @@ document.addEventListener('click', (e) => {
   if (t) {
     e.preventDefault();
     if (currentAuthUser && (t.dataset.openAuth === 'register' || t.dataset.openAuth === 'login')) {
-      window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+      window.history.pushState({ section: 'chat' }, '', appPath('chat'));
       showChatView();
       const active = activeSession();
       if (active) renderConversation(active.id); else showChatWelcome();
@@ -2552,9 +2554,9 @@ function openChatSection(section) {
   activeChatSection = section || 'chat';
   const routes = { chat: 'chat', history: 'history', files: 'files', diary: 'diary', companion: 'companion', settings: 'configuration', profile: 'profile', support: 'support' };
   const route = routes[section] || 'chat';
-  const target = `/SantitosIA/${route}`;
+  const target = appPath(route);
   if (section === 'chat') {
-    if (window.location.pathname.replace(/\/+$/, '') !== '/SantitosIA/chat' || window.location.hash) {
+    if (window.location.pathname.replace(/\/+$/, '') !== appPath('chat') || window.location.hash) {
       window.history.pushState({ section }, '', target);
     }
     const session = activeSession();
@@ -2572,8 +2574,8 @@ function startNewChat() {
   activeChatSection = 'chat';
   setCompanionVisible(false);
   if (chatEls.stage) chatEls.stage.style.removeProperty('--chat-companion-image');
-  if (window.location.pathname.replace(/\/+$/, '').toLowerCase() !== '/santitosia/chat' || window.location.hash) {
-    window.history.pushState({ section: 'chat' }, '', '/SantitosIA/chat');
+  if (window.location.pathname.replace(/\/+$/, '').toLowerCase() !== appPath('chat').toLowerCase() || window.location.hash) {
+    window.history.pushState({ section: 'chat' }, '', appPath('chat'));
   }
   chatEls.input.value = '';
   resizeChatInput();
@@ -2733,7 +2735,7 @@ window.addEventListener('popstate', async () => {
 });
 window.addEventListener('hashchange', async () => {
   if (window.location.hash === '#chat') {
-    window.history.replaceState({ section: 'chat' }, '', '/SantitosIA/chat');
+    window.history.replaceState({ section: 'chat' }, '', appPath('chat'));
     try {
       const { data } = await sb.auth.getSession();
       const user = data && data.session && data.session.user;
