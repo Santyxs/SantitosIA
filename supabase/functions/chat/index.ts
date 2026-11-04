@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
+const APP_ORIGIN = "https://santitosia.onrender.com";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": APP_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Expose-Headers": "X-Daily-Used, X-Daily-Limit, X-Model",
@@ -80,15 +80,18 @@ async function refundQuota(adminClient: any, userId: string) {
   }
 }
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  if (origin && origin !== APP_ORIGIN) {
+    return new Response("Origen no permitido.", {
+      status: 403,
+      headers: corsHeaders,
+    });
+  }
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
   if (req.method !== "POST") {
     return jsonResponse({ error: "Método no permitido." }, 405);
-  }
-  const origin = req.headers.get("origin");
-  if (origin && !["https://santyxs.github.io", "https://santitosia.onrender.com"].includes(origin)) {
-    return jsonResponse({ error: "Origen no permitido." }, 403);
   }
   const authHeader = req.headers.get("Authorization");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
