@@ -494,7 +494,6 @@ function stopSpeaking() {
 }
 function sanitizeTextForSpeech(text) {
   let t = String(text || '');
-  // Quitar markdown y símbolos que la voz no debe leer
   t = t.replace(/```[\s\S]*?```/g, ' ');
   t = t.replace(/`[^`]*`/g, ' ');
   t = t.replace(/\*\*([^*]+)\*\*/g, '$1');
@@ -505,22 +504,37 @@ function sanitizeTextForSpeech(text) {
   t = t.replace(/#{1,6}\s*/g, '');
   t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   t = t.replace(/https?:\/\/\S+/gi, ' ');
-  // Quitar asteriscos, guiones decorativos, bullets, etc.
   t = t.replace(/[\*#_~`|>]/g, ' ');
   t = t.replace(/^[\-•·]+\s*/gm, '');
   t = t.replace(/[•·▪▸►◆◇★☆✓✔✕✖]/g, ' ');
-  // No leer puntos suspensivos / símbolos sueltos de forma rara
   t = t.replace(/\.{3,}/g, ', ');
   t = t.replace(/…/g, ', ');
-  // Emoticones textuales frecuentes
   t = t.replace(/:[)(DPpOo]/g, ' ');
-  t = t.replace(/[😀-🙏🌀-🗿🚀-🛿🜀-🝿]+/gu, ' ');
-  // Limpiar espacios
+  t = t.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ' ');
   t = t.replace(/\s{2,}/g, ' ').trim();
   return t;
 }
 function isFemaleCharacter(characterId) {
   return characterId === 'syntia' || characterId === 'syntia-jr';
+}
+function scoreVoiceNaturalness(voice, wantFemale) {
+  let score = 0;
+  const name = (voice.name || '') + ' ' + (voice.voiceURI || '');
+  const lang = voice.lang || '';
+  if (/^es(-|_)/i.test(lang)) score += 50;
+  if (/es-ES/i.test(lang)) score += 15;
+  if (/es-MX|es-US|es-AR|es-CO/i.test(lang)) score += 8;
+  // Prefer neural / premium / natural sounding voices
+  if (/neural|natural|premium|enhanced|online|google|microsoft|apple|siri|samsung|eloquence/i.test(name)) score += 40;
+  if (/compact|basic|robot|espeak|flite/i.test(name)) score -= 30;
+  const femaleHints = /female|femenin|woman|mujer|monica|mónica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat|paloma|jorgea|zira|susan|sara|lola|nuria|conchita/i;
+  const maleHints = /male|masculin|\bman\b|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio|jorge|thomas|jorge|pablo|jorge|msdavid|jorge/i;
+  if (wantFemale && femaleHints.test(name)) score += 35;
+  if (!wantFemale && maleHints.test(name)) score += 35;
+  if (wantFemale && maleHints.test(name) && !femaleHints.test(name)) score -= 25;
+  if (!wantFemale && femaleHints.test(name) && !maleHints.test(name)) score -= 25;
+  if (voice.localService) score += 5;
+  return score;
 }
 function pickVoiceForCharacter(characterId, preferredURI) {
   const voices = window.speechSynthesis.getVoices();
@@ -529,15 +543,21 @@ function pickVoiceForCharacter(characterId, preferredURI) {
     const preferred = voices.find((v) => v.voiceURI === preferredURI);
     if (preferred) return preferred;
   }
-  const spanish = voices.filter((v) => /^es(-|_)/i.test(v.lang));
-  const pool = spanish.length ? spanish : voices;
-  const femaleHints = /female|femenin|woman|mujer|monica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat/i;
-  const maleHints = /male|masculin|man|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio/i;
   const wantFemale = isFemaleCharacter(characterId);
-  const byGender = pool.filter((v) => wantFemale ? femaleHints.test(v.name) : maleHints.test(v.name));
-  if (byGender.length) return byGender[0];
-  // Fallback: pitch already adjusted; pick first Spanish voice
-  return pool[0] || null;
+  const ranked = voices
+    .map((v) => ({ v, s: scoreVoiceNaturalness(v, wantFemale) }))
+    .sort((a, b) => b.s - a.s);
+  return ranked.length ? ranked[0].v : null;
+}
+function splitTextForNaturalSpeech(text) {
+  const clean = sanitizeTextForSpeech(text).slice(0, 12000);
+  if (!clean) return [];
+  // Frases con pausas naturales
+  const parts = clean
+    .split(/(?<=[.?!:;])\s+|\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length ? parts : [clean];
 }
 function speakText(text) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -546,23 +566,47 @@ function speakText(text) {
   }
   stopSpeaking();
   const prefs = getCompanionPrefs();
-  const clean = sanitizeTextForSpeech(text).slice(0, 12000);
-  if (!clean) return false;
-  const utterance = new SpeechSynthesisUtterance(clean);
-  utterance.lang = 'es-ES';
+  const chunks = splitTextForNaturalSpeech(text);
+  if (!chunks.length) return false;
   const female = isFemaleCharacter(prefs.character);
   const junior = prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr';
-  utterance.rate = junior ? 1.04 : 0.96;
-  utterance.pitch = female ? (junior ? 1.12 : 1.08) : (junior ? 1.02 : 0.92);
+  // Ritmo más humano (un poco más lento y estable)
+  const rate = junior ? 1.0 : 0.94;
+  const pitch = female ? (junior ? 1.06 : 1.03) : (junior ? 0.98 : 0.94);
   const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
-  if (voice) utterance.voice = voice;
-  utterance.onstart = () => updateChatCompanionBackground('hablando');
-  utterance.onend = () => updateChatCompanionBackground('reposo');
-  utterance.onerror = () => {
-    showChatToast('No se ha podido reproducir la voz en este dispositivo.');
-    updateChatCompanionBackground('reposo');
+
+  let index = 0;
+  const speakNext = () => {
+    if (index >= chunks.length) {
+      updateChatCompanionBackground('reposo');
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(chunks[index]);
+    utterance.lang = (voice && voice.lang) || 'es-ES';
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    // volume ligeramente bajo del máximo suena menos agresivo
+    utterance.volume = 0.95;
+    if (voice) utterance.voice = voice;
+    if (index === 0) {
+      utterance.onstart = () => updateChatCompanionBackground('hablando');
+    }
+    utterance.onend = () => {
+      index += 1;
+      // pequeña pausa entre frases
+      if (index < chunks.length) {
+        setTimeout(speakNext, 120);
+      } else {
+        updateChatCompanionBackground('reposo');
+      }
+    };
+    utterance.onerror = () => {
+      showChatToast('No se ha podido reproducir la voz en este dispositivo.');
+      updateChatCompanionBackground('reposo');
+    };
+    window.speechSynthesis.speak(utterance);
   };
-  window.speechSynthesis.speak(utterance);
+  speakNext();
   return true;
 }
 async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
