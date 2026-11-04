@@ -499,21 +499,31 @@ function sanitizeTextForSpeech(text) {
   // Código
   t = t.replace(/```[\s\S]*?```/g, ' ');
   t = t.replace(/`[^`]*`/g, ' ');
-  // Primero negritas markdown → dejar texto (antes de quitar *acciones*)
+  // Negritas primero (conservar texto)
   t = t.replace(/\*\*([^*]+)\*\*/g, '$1');
   t = t.replace(/__([^_]+)__/g, '$1');
-  // Acciones de roleplay *como esta*: omitir por completo
+  // Acciones roleplay *como esta* → no leer
   t = t.replace(/\*[^*\n]{1,200}\*/g, ' ');
-  // Cursiva _acción_ corta tipo roleplay
-  t = t.replace(/\b_([^_\n]{1,120})_\b/g, ' ');
+  t = t.replace(/_([^_\n]{1,120})_/g, ' ');
   t = t.replace(/~~([^~]+)~~/g, '$1');
   t = t.replace(/#{1,6}\s*/g, '');
   t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   t = t.replace(/https?:\/\/\S+/gi, ' ');
-  // Símbolos sueltos restantes
+  // Emojis y pictogramas (no leer)
+  try {
+    t = t.replace(/\p{Extended_Pictographic}/gu, ' ');
+    t = t.replace(/\p{Emoji_Presentation}/gu, ' ');
+  } catch (e) {
+    // Fallback para navegadores sin soporte Unicode property escapes
+    t = t.replace(/[\u{1F300}-\u{1FAFF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}]/gu, ' ');
+  }
+  t = t.replace(/\uFE0F/g, '');
+  t = t.replace(/\u200D/g, '');
+  t = t.replace(/[\u2600-\u26FF\u2700-\u27BF]/g, ' ');
+  // Símbolos sueltos
   t = t.replace(/[*#_~`|>]/g, ' ');
   t = t.replace(/^[\-•·]+\s*/gm, '');
-  t = t.replace(/[•·▪▸►]/g, ' ');
+  t = t.replace(/[•·▪▸►★☆✓✔✕✖]/g, ' ');
   t = t.replace(/\.{3,}/g, ', ');
   t = t.replace(/…/g, ', ');
   t = t.replace(/\s{2,}/g, ' ').trim();
