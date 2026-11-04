@@ -1,20 +1,7 @@
 const SUPABASE_URL = 'https://tznuahhwpewbpxgmtkek.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yuGPJmCq_APMG9O32TnjsQ_wwswn9LK';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const APP_BASE_PATH = window.location.hostname === 'santyxs.github.io' ? '/SantitosIA' : '';
-function appPath(route) { return `${APP_BASE_PATH}/${String(route || '').replace(/^\/+/, '')}`; }
-
-(function restoreSpaPath() {
-  try {
-    const redirect = sessionStorage.getItem('spa-redirect');
-    if (!redirect) return;
-    sessionStorage.removeItem('spa-redirect');
-    const url = new URL(redirect, window.location.origin);
-    if (url.pathname.toLowerCase().indexOf('/santitosia') === 0 && url.href !== window.location.href) {
-      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
-    }
-  } catch (_) {}
-})();
+function appPath(route) { return `/${String(route || '').replace(/^\/+/, '')}`; }
 
 function logError() {
   try {
