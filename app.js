@@ -492,6 +492,53 @@ function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   updateChatCompanionBackground('reposo');
 }
+function sanitizeTextForSpeech(text) {
+  let t = String(text || '');
+  // Quitar markdown y símbolos que la voz no debe leer
+  t = t.replace(/```[\s\S]*?```/g, ' ');
+  t = t.replace(/`[^`]*`/g, ' ');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '$1');
+  t = t.replace(/__([^_]+)__/g, '$1');
+  t = t.replace(/\*([^*]+)\*/g, '$1');
+  t = t.replace(/_([^_]+)_/g, '$1');
+  t = t.replace(/~~([^~]+)~~/g, '$1');
+  t = t.replace(/#{1,6}\s*/g, '');
+  t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  t = t.replace(/https?:\/\/\S+/gi, ' ');
+  // Quitar asteriscos, guiones decorativos, bullets, etc.
+  t = t.replace(/[\*#_~`|>]/g, ' ');
+  t = t.replace(/^[\-•·]+\s*/gm, '');
+  t = t.replace(/[•·▪▸►◆◇★☆✓✔✕✖]/g, ' ');
+  // No leer puntos suspensivos / símbolos sueltos de forma rara
+  t = t.replace(/\.{3,}/g, ', ');
+  t = t.replace(/…/g, ', ');
+  // Emoticones textuales frecuentes
+  t = t.replace(/:[)(DPpOo]/g, ' ');
+  t = t.replace(/[😀-🙏🌀-🗿🚀-🛿🜀-🝿]+/gu, ' ');
+  // Limpiar espacios
+  t = t.replace(/\s{2,}/g, ' ').trim();
+  return t;
+}
+function isFemaleCharacter(characterId) {
+  return characterId === 'syntia' || characterId === 'syntia-jr';
+}
+function pickVoiceForCharacter(characterId, preferredURI) {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  if (preferredURI) {
+    const preferred = voices.find((v) => v.voiceURI === preferredURI);
+    if (preferred) return preferred;
+  }
+  const spanish = voices.filter((v) => /^es(-|_)/i.test(v.lang));
+  const pool = spanish.length ? spanish : voices;
+  const femaleHints = /female|femenin|woman|mujer|monica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat/i;
+  const maleHints = /male|masculin|man|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio/i;
+  const wantFemale = isFemaleCharacter(characterId);
+  const byGender = pool.filter((v) => wantFemale ? femaleHints.test(v.name) : maleHints.test(v.name));
+  if (byGender.length) return byGender[0];
+  // Fallback: pitch already adjusted; pick first Spanish voice
+  return pool[0] || null;
+}
 function speakText(text) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
     showChatToast('La lectura en voz alta no está disponible en este navegador.');
@@ -499,16 +546,16 @@ function speakText(text) {
   }
   stopSpeaking();
   const prefs = getCompanionPrefs();
-  const utterance = new SpeechSynthesisUtterance(String(text || '').slice(0, 12000));
+  const clean = sanitizeTextForSpeech(text).slice(0, 12000);
+  if (!clean) return false;
+  const utterance = new SpeechSynthesisUtterance(clean);
   utterance.lang = 'es-ES';
-  utterance.rate = (prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr') ? 1.04 : 0.96;
-  utterance.pitch = (prefs.character === 'syntia' || prefs.character === 'syntia-jr')
-    ? (prefs.character === 'syntia-jr' ? 1.14 : 1.10)
-    : (prefs.character === 'santitos-jr' ? 1.08 : 0.94);
-  const voices = window.speechSynthesis.getVoices();
-  const selectedVoice = voices.find((voice) => voice.voiceURI === prefs.voiceURI);
-  const spanishVoice = voices.find((voice) => /^es(-|_)/i.test(voice.lang));
-  if (selectedVoice || spanishVoice) utterance.voice = selectedVoice || spanishVoice;
+  const female = isFemaleCharacter(prefs.character);
+  const junior = prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr';
+  utterance.rate = junior ? 1.04 : 0.96;
+  utterance.pitch = female ? (junior ? 1.12 : 1.08) : (junior ? 1.02 : 0.92);
+  const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
+  if (voice) utterance.voice = voice;
   utterance.onstart = () => updateChatCompanionBackground('hablando');
   utterance.onend = () => updateChatCompanionBackground('reposo');
   utterance.onerror = () => {
