@@ -488,12 +488,42 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
     }, lockDuration);
   }
 }
-function stopSpeaking() {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
+let speechKeepAliveTimer = null;
+let speechSessionId = 0;
+let activeSpeechUtterances = [];
+
+function clearSpeechKeepAlive() {
+  if (speechKeepAliveTimer) {
+    clearInterval(speechKeepAliveTimer);
+    speechKeepAliveTimer = null;
   }
+}
+
+function startSpeechKeepAlive() {
+  clearSpeechKeepAlive();
+  // Chrome a veces pausa la voz a los ~15s; esto la mantiene activa
+  speechKeepAliveTimer = setInterval(() => {
+    try {
+      if (window.speechSynthesis && window.speechSynthesis.speaking && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch (e) {}
+  }, 5000);
+}
+
+function stopSpeaking() {
+  speechSessionId += 1;
+  activeSpeechUtterances = [];
+  clearSpeechKeepAlive();
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+    }
+  } catch (e) {}
   updateChatCompanionBackground('reposo');
 }
+
 function sanitizeTextForSpeech(text) {
   let t = String(text || '');
   t = t.replace(/```[\s\S]*?```/g, ' ');
@@ -514,9 +544,11 @@ function sanitizeTextForSpeech(text) {
   t = t.replace(/\s{2,}/g, ' ').trim();
   return t;
 }
+
 function isFemaleCharacter(characterId) {
   return characterId === 'syntia' || characterId === 'syntia-jr';
 }
+
 function scoreVoiceNaturalness(voice, wantFemale) {
   let score = 0;
   const name = ((voice && voice.name) || '') + ' ' + ((voice && voice.voiceURI) || '');
@@ -525,14 +557,15 @@ function scoreVoiceNaturalness(voice, wantFemale) {
   if (/es-ES/i.test(lang)) score += 20;
   if (/neural|natural|premium|enhanced|online|google|microsoft|apple/i.test(name)) score += 50;
   if (/compact|basic|robot|espeak|flite|legacy/i.test(name)) score -= 40;
-  const femaleHints = /female|femenin|woman|mujer|monica|mónica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat|paloma|zira|sara|lola|nuria|conchita|paulina|google español/i;
-  const maleHints = /male|masculin|\bman\b|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio|jorge|pablo/i;
+  const femaleHints = /female|femenin|woman|mujer|monica|mónica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat|paloma|zira|sara|lola|nuria|conchita/i;
+  const maleHints = /male|masculin|\bman\b|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio/i;
   if (wantFemale && femaleHints.test(name)) score += 40;
   if (!wantFemale && maleHints.test(name)) score += 40;
   if (wantFemale && maleHints.test(name) && !femaleHints.test(name)) score -= 30;
   if (!wantFemale && femaleHints.test(name) && !maleHints.test(name)) score -= 30;
   return score;
 }
+
 function pickVoiceForCharacter(characterId, preferredURI) {
   const voices = window.speechSynthesis.getVoices() || [];
   if (!voices.length) return null;
@@ -546,76 +579,135 @@ function pickVoiceForCharacter(characterId, preferredURI) {
     .sort((a, b) => b.s - a.s);
   return ranked.length ? ranked[0].v : null;
 }
+
 function ensureVoicesLoaded() {
   return new Promise((resolve) => {
-    const voices = window.speechSynthesis.getVoices();
-    if (voices && voices.length) {
-      resolve(voices);
+    if (!('speechSynthesis' in window)) {
+      resolve([]);
       return;
     }
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
+    const existing = window.speechSynthesis.getVoices();
+    if (existing && existing.length) {
+      resolve(existing);
+      return;
+    }
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
       resolve(window.speechSynthesis.getVoices() || []);
     };
-    window.speechSynthesis.onvoiceschanged = finish;
-    setTimeout(finish, 400);
+    window.speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+    // Algunos navegadores necesitan un tick
+    setTimeout(done, 300);
+    setTimeout(done, 800);
   });
 }
+
 function speakText(text) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
     showChatToast('La lectura en voz alta no está disponible en este navegador.');
     return false;
   }
-  stopSpeaking();
+
   const prefs = getCompanionPrefs();
   const clean = sanitizeTextForSpeech(text).slice(0, 12000);
   if (!clean) return false;
 
+  // Reinicia cola de forma segura
+  stopSpeaking();
+  const session = speechSessionId;
   const female = isFemaleCharacter(prefs.character);
   const junior = prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr';
-  // Más pausado y cercano a conversación real
   const rate = junior ? 0.96 : 0.9;
   const pitch = female ? (junior ? 1.05 : 1.02) : (junior ? 0.97 : 0.93);
 
-  const chunks = clean
+  const parts = clean
     .split(/(?<=[.?!;:])\s+|\n+/)
     .map((p) => p.trim())
     .filter(Boolean);
-  const parts = chunks.length ? chunks : [clean];
+  const chunks = parts.length ? parts : [clean];
 
-  ensureVoicesLoaded().then(() => {
-    const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
+  ensureVoicesLoaded().then((voices) => {
+    if (session !== speechSessionId) return;
+
+    let voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
+    if (!voice && voices.length) {
+      voice = voices.find((v) => /^es(-|_)/i.test(v.lang)) || voices[0];
+    }
+
     let index = 0;
+    startSpeechKeepAlive();
+
     const speakNext = () => {
-      if (index >= parts.length) {
+      if (session !== speechSessionId) return;
+      if (index >= chunks.length) {
+        clearSpeechKeepAlive();
         updateChatCompanionBackground('reposo');
         return;
       }
-      const utterance = new SpeechSynthesisUtterance(parts[index]);
+
+      const utterance = new SpeechSynthesisUtterance(chunks[index]);
+      // Evita que el GC borre el utterance (bug de Chrome)
+      activeSpeechUtterances.push(utterance);
+
       utterance.lang = (voice && voice.lang) ? voice.lang : 'es-ES';
       utterance.rate = rate;
       utterance.pitch = pitch;
-      utterance.volume = 0.95;
+      utterance.volume = 1;
       if (voice) utterance.voice = voice;
-      if (index === 0) {
-        utterance.onstart = () => updateChatCompanionBackground('hablando');
-      }
-      utterance.onend = () => {
-        index += 1;
-        if (index < parts.length) setTimeout(speakNext, 160);
-        else updateChatCompanionBackground('reposo');
+
+      utterance.onstart = () => {
+        if (session !== speechSessionId) return;
+        if (index === 0) updateChatCompanionBackground('hablando');
+        try {
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch (e) {}
       };
-      utterance.onerror = () => {
+
+      utterance.onend = () => {
+        if (session !== speechSessionId) return;
+        index += 1;
+        if (index < chunks.length) {
+          // Pequeña pausa; evita race tras cancel/speak
+          setTimeout(speakNext, 120);
+        } else {
+          clearSpeechKeepAlive();
+          activeSpeechUtterances = [];
+          updateChatCompanionBackground('reposo');
+        }
+      };
+
+      utterance.onerror = (ev) => {
+        if (session !== speechSessionId) return;
+        // interrupted es normal al cancelar
+        if (ev && (ev.error === 'interrupted' || ev.error === 'canceled')) return;
+        // Reintento sin voz concreta si falla
+        if (voice && index === 0) {
+          voice = null;
+          setTimeout(speakNext, 80);
+          return;
+        }
+        clearSpeechKeepAlive();
         updateChatCompanionBackground('reposo');
       };
-      window.speechSynthesis.speak(utterance);
+
+      try {
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        clearSpeechKeepAlive();
+        updateChatCompanionBackground('reposo');
+      }
     };
-    speakNext();
+
+    // Tras cancel(), Chrome necesita un pequeño delay antes del siguiente speak
+    setTimeout(speakNext, 60);
   });
+
   return true;
 }
+
 async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
