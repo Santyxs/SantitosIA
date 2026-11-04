@@ -80,7 +80,7 @@ declare
   v_user_id uuid := p_user_id;
   v_count integer;
   v_today date := (timezone('utc', now()))::date;
-  v_limit integer := 5;
+  v_limit integer := 50;
 begin
   if v_user_id is null then
     raise exception 'User id required';
