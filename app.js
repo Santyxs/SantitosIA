@@ -591,47 +591,42 @@ function speakText(text) {
 
   const female = isFemaleCharacter(prefs.character);
   const junior = prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr';
-  // Más pausado y cercano a conversación real
-  const rate = junior ? 0.96 : 0.9;
+  const rate = junior ? 1.0 : 0.95;
   const pitch = female ? (junior ? 1.05 : 1.02) : (junior ? 0.97 : 0.93);
-
-  const chunks = clean
-    .split(/(?<=[.?!;:])\s+|\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const parts = chunks.length ? chunks : [clean];
 
   ensureVoicesLoaded().then(() => {
     const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
-    let index = 0;
-    const speakNext = () => {
-      if (index >= parts.length) {
-        updateChatCompanionBackground('reposo');
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(parts[index]);
-      utterance.lang = (voice && voice.lang) ? voice.lang : 'es-ES';
-      utterance.rate = rate;
-      utterance.pitch = pitch;
-      utterance.volume = 0.95;
-      if (voice) utterance.voice = voice;
-      if (index === 0) {
-        utterance.onstart = () => updateChatCompanionBackground('hablando');
-      }
-      utterance.onend = () => {
-        index += 1;
-        if (index < parts.length) setTimeout(speakNext, 160);
-        else updateChatCompanionBackground('reposo');
-      };
-      utterance.onerror = () => {
-        updateChatCompanionBackground('reposo');
-      };
-      window.speechSynthesis.speak(utterance);
+    const utterance = new SpeechSynthesisUtterance(clean);
+    // Mantener referencia para evitar GC en Chrome
+    window.__santitosUtterance = utterance;
+    utterance.lang = (voice && voice.lang) ? voice.lang : 'es-ES';
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    utterance.volume = 1;
+    if (voice) utterance.voice = voice;
+    utterance.onstart = () => {
+      updateChatCompanionBackground('hablando');
+      try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch (e) {}
     };
-    speakNext();
+    utterance.onend = () => {
+      window.__santitosUtterance = null;
+      updateChatCompanionBackground('reposo');
+    };
+    utterance.onerror = (ev) => {
+      if (ev && (ev.error === 'interrupted' || ev.error === 'canceled')) return;
+      window.__santitosUtterance = null;
+      updateChatCompanionBackground('reposo');
+    };
+    try {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      updateChatCompanionBackground('reposo');
+    }
   });
   return true;
 }
+
 async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
