@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
     }, 503);
   }
   const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
-  const dailyLimit = Number(quota?.daily_limit || (isPremium ? 10 : 5));
+  const dailyLimit = Number(quota?.daily_limit || (isPremium ? 50 : 50));
   if (!quota?.allowed) {
     return jsonResponse({
       error: `Has alcanzado tu límite de ${dailyLimit} mensajes de IA por hoy. Vuelve mañana.`,
