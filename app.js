@@ -443,7 +443,7 @@ function saveCompanionPrefs(next) {
 function getCharacterInfo(id) { return CHARACTER_INFO[id] || CHARACTER_INFO['santitos-jr']; }
 function getCharacterImagePath(characterId, expression = 'reposo', appearance = 'human') {
   if (appearance === 'wolf') return 'assets/logo.webp';
-  const CACHE = 'v10';
+  const CACHE = 'v11';
   const info = getCharacterInfo(characterId);
   const folder = info.folder || 'santitos';
   const expr = CHARACTER_EXPRESSIONS.includes(expression) ? expression : 'reposo';
