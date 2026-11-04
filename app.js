@@ -489,7 +489,9 @@ function updateChatCompanionBackground(expression = 'reposo', lockDuration = 0) 
   }
 }
 function stopSpeaking() {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
   updateChatCompanionBackground('reposo');
 }
 function sanitizeTextForSpeech(text) {
@@ -504,13 +506,11 @@ function sanitizeTextForSpeech(text) {
   t = t.replace(/#{1,6}\s*/g, '');
   t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   t = t.replace(/https?:\/\/\S+/gi, ' ');
-  t = t.replace(/[\*#_~`|>]/g, ' ');
+  t = t.replace(/[*#_~`|>]/g, ' ');
   t = t.replace(/^[\-•·]+\s*/gm, '');
-  t = t.replace(/[•·▪▸►◆◇★☆✓✔✕✖]/g, ' ');
+  t = t.replace(/[•·▪▸►]/g, ' ');
   t = t.replace(/\.{3,}/g, ', ');
   t = t.replace(/…/g, ', ');
-  t = t.replace(/:[)(DPpOo]/g, ' ');
-  t = t.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ' ');
   t = t.replace(/\s{2,}/g, ' ').trim();
   return t;
 }
@@ -519,25 +519,22 @@ function isFemaleCharacter(characterId) {
 }
 function scoreVoiceNaturalness(voice, wantFemale) {
   let score = 0;
-  const name = (voice.name || '') + ' ' + (voice.voiceURI || '');
-  const lang = voice.lang || '';
-  if (/^es(-|_)/i.test(lang)) score += 50;
-  if (/es-ES/i.test(lang)) score += 15;
-  if (/es-MX|es-US|es-AR|es-CO/i.test(lang)) score += 8;
-  // Prefer neural / premium / natural sounding voices
-  if (/neural|natural|premium|enhanced|online|google|microsoft|apple|siri|samsung|eloquence/i.test(name)) score += 40;
-  if (/compact|basic|robot|espeak|flite/i.test(name)) score -= 30;
-  const femaleHints = /female|femenin|woman|mujer|monica|mónica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat|paloma|jorgea|zira|susan|sara|lola|nuria|conchita/i;
-  const maleHints = /male|masculin|\bman\b|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio|jorge|thomas|jorge|pablo|jorge|msdavid|jorge/i;
-  if (wantFemale && femaleHints.test(name)) score += 35;
-  if (!wantFemale && maleHints.test(name)) score += 35;
-  if (wantFemale && maleHints.test(name) && !femaleHints.test(name)) score -= 25;
-  if (!wantFemale && femaleHints.test(name) && !maleHints.test(name)) score -= 25;
-  if (voice.localService) score += 5;
+  const name = ((voice && voice.name) || '') + ' ' + ((voice && voice.voiceURI) || '');
+  const lang = (voice && voice.lang) || '';
+  if (/^es(-|_)/i.test(lang)) score += 60;
+  if (/es-ES/i.test(lang)) score += 20;
+  if (/neural|natural|premium|enhanced|online|google|microsoft|apple/i.test(name)) score += 50;
+  if (/compact|basic|robot|espeak|flite|legacy/i.test(name)) score -= 40;
+  const femaleHints = /female|femenin|woman|mujer|monica|mónica|paulina|sabina|helena|lucia|lucía|maria|maría|carmen|elena|sofia|sofía|isabel|laura|ana|dalia|salma|francisca|montserrat|paloma|zira|sara|lola|nuria|conchita|paulina|google español/i;
+  const maleHints = /male|masculin|\bman\b|hombre|jorge|pablo|diego|carlos|miguel|antonio|juan|pedro|andres|andrés|enrique|raul|raúl|jose|josé|alberto|david|sergio|jorge|pablo/i;
+  if (wantFemale && femaleHints.test(name)) score += 40;
+  if (!wantFemale && maleHints.test(name)) score += 40;
+  if (wantFemale && maleHints.test(name) && !femaleHints.test(name)) score -= 30;
+  if (!wantFemale && femaleHints.test(name) && !maleHints.test(name)) score -= 30;
   return score;
 }
 function pickVoiceForCharacter(characterId, preferredURI) {
-  const voices = window.speechSynthesis.getVoices();
+  const voices = window.speechSynthesis.getVoices() || [];
   if (!voices.length) return null;
   if (preferredURI) {
     const preferred = voices.find((v) => v.voiceURI === preferredURI);
@@ -545,19 +542,26 @@ function pickVoiceForCharacter(characterId, preferredURI) {
   }
   const wantFemale = isFemaleCharacter(characterId);
   const ranked = voices
-    .map((v) => ({ v, s: scoreVoiceNaturalness(v, wantFemale) }))
+    .map((v) => ({ v: v, s: scoreVoiceNaturalness(v, wantFemale) }))
     .sort((a, b) => b.s - a.s);
   return ranked.length ? ranked[0].v : null;
 }
-function splitTextForNaturalSpeech(text) {
-  const clean = sanitizeTextForSpeech(text).slice(0, 12000);
-  if (!clean) return [];
-  // Frases con pausas naturales
-  const parts = clean
-    .split(/(?<=[.?!:;])\s+|\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return parts.length ? parts : [clean];
+function ensureVoicesLoaded() {
+  return new Promise((resolve) => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length) {
+      resolve(voices);
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve(window.speechSynthesis.getVoices() || []);
+    };
+    window.speechSynthesis.onvoiceschanged = finish;
+    setTimeout(finish, 400);
+  });
 }
 function speakText(text) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -566,47 +570,50 @@ function speakText(text) {
   }
   stopSpeaking();
   const prefs = getCompanionPrefs();
-  const chunks = splitTextForNaturalSpeech(text);
-  if (!chunks.length) return false;
+  const clean = sanitizeTextForSpeech(text).slice(0, 12000);
+  if (!clean) return false;
+
   const female = isFemaleCharacter(prefs.character);
   const junior = prefs.character === 'santitos-jr' || prefs.character === 'syntia-jr';
-  // Ritmo más humano (un poco más lento y estable)
-  const rate = junior ? 1.0 : 0.94;
-  const pitch = female ? (junior ? 1.06 : 1.03) : (junior ? 0.98 : 0.94);
-  const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
+  // Más pausado y cercano a conversación real
+  const rate = junior ? 0.96 : 0.9;
+  const pitch = female ? (junior ? 1.05 : 1.02) : (junior ? 0.97 : 0.93);
 
-  let index = 0;
-  const speakNext = () => {
-    if (index >= chunks.length) {
-      updateChatCompanionBackground('reposo');
-      return;
-    }
-    const utterance = new SpeechSynthesisUtterance(chunks[index]);
-    utterance.lang = (voice && voice.lang) || 'es-ES';
-    utterance.rate = rate;
-    utterance.pitch = pitch;
-    // volume ligeramente bajo del máximo suena menos agresivo
-    utterance.volume = 0.95;
-    if (voice) utterance.voice = voice;
-    if (index === 0) {
-      utterance.onstart = () => updateChatCompanionBackground('hablando');
-    }
-    utterance.onend = () => {
-      index += 1;
-      // pequeña pausa entre frases
-      if (index < chunks.length) {
-        setTimeout(speakNext, 120);
-      } else {
+  const chunks = clean
+    .split(/(?<=[.?!;:])\s+|\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const parts = chunks.length ? chunks : [clean];
+
+  ensureVoicesLoaded().then(() => {
+    const voice = pickVoiceForCharacter(prefs.character, prefs.voiceURI);
+    let index = 0;
+    const speakNext = () => {
+      if (index >= parts.length) {
         updateChatCompanionBackground('reposo');
+        return;
       }
+      const utterance = new SpeechSynthesisUtterance(parts[index]);
+      utterance.lang = (voice && voice.lang) ? voice.lang : 'es-ES';
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.volume = 0.95;
+      if (voice) utterance.voice = voice;
+      if (index === 0) {
+        utterance.onstart = () => updateChatCompanionBackground('hablando');
+      }
+      utterance.onend = () => {
+        index += 1;
+        if (index < parts.length) setTimeout(speakNext, 160);
+        else updateChatCompanionBackground('reposo');
+      };
+      utterance.onerror = () => {
+        updateChatCompanionBackground('reposo');
+      };
+      window.speechSynthesis.speak(utterance);
     };
-    utterance.onerror = () => {
-      showChatToast('No se ha podido reproducir la voz en este dispositivo.');
-      updateChatCompanionBackground('reposo');
-    };
-    window.speechSynthesis.speak(utterance);
-  };
-  speakNext();
+    speakNext();
+  });
   return true;
 }
 async function compressImageAttachment(file, maxDimension = 1024, quality = 0.8) {
